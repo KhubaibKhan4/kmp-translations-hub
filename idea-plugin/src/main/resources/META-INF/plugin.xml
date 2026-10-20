@@ -1,0 +1,22 @@
+<idea-plugin>
+    <id>io.github.khubaibkhan4.kmptranslationshub</id>
+    <name>KMP Translations Hub</name>
+    <vendor>Khubaib Khan</vendor>
+    <description><![CDATA[
+    <p><b>Every translation of your Compose Multiplatform app in one table.</b></p>
+    <ul>
+      <li>A <b>Translations</b> tab on every <code>composeResources/values…/strings.xml</code>: all keys of the module
+          against all locales, with missing translations marked.</li>
+      <li>Strings, plurals and string-arrays, with checks for missing translations, mismatched placeholders, plural
+          forms each language needs and array sizes.</li>
+      <li>Edits keep your files' formatting and comments, and each one is a single Undo.</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.xml</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileEditorProvider implementation="io.github.translationshub.idea.TranslationsEditorProvider"/>
+    </extensions>
+</idea-plugin>
