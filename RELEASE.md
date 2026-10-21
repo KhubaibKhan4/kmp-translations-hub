@@ -2,15 +2,17 @@
 
 ## Your steps (accounts and decisions only you can make)
 
-- [ ] **GitHub repo** `KhubaibKhan4/kmp-translations-hub` (the vendor URL in `gradle.properties` points there), then push.
+- [x] **GitHub repo** `KhubaibKhan4/kmp-translations-hub`, private, pushed 2026-10-21. Make it public only if you want to.
+- [ ] **Fix GitHub billing** so CI runs: the first run was refused ("recent account payments have failed or your
+      spending limit needs to be increased"), same as KMP Device Hub.
 - [ ] **Paid plan**: apply in JetBrains Marketplace → vendor profile → Sales, as Freemium. They assign the product code.
 - [ ] **Price and trial length.**
 - [ ] **Release date**: `translationshub.releaseDate` is a placeholder (20261201). Set it to the launch date (YYYYMMDD).
 - [ ] Secrets for CI with `gh secret set` (it prompts): `PUBLISH_TOKEN`, `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`.
 - [ ] To try Apple translation on your Mac: download the languages in System Settings → General → Language & Region →
       Translation Languages.
-- [ ] Merge KMP Device Hub's `run-in-locale` branch (the hidden `KmpDeviceHub.RunInLocale` action) and ship it in a
-      Device Hub release, so "Run App in Selected Locale" works.
+- [ ] Ship KMP Device Hub's `RunInLocale` action (merged into its local `main` on 2026-10-21, not pushed) in a Device
+      Hub release, so "Run App in Selected Locale" works.
 
 ## Build steps
 
