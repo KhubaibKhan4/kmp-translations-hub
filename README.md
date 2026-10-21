@@ -53,6 +53,7 @@ the plugin are adopted as `human` and current, so the first run doesn't re-trans
 | MyMemory | None | About 5,000 characters a day per IP, ~10× with an optional email. One string per request: fine for a few new strings. |
 | DeepL | Yours | Free plan: 500,000 characters a month (`:fx` keys use the free endpoint). |
 | Google Cloud Translation | Yours | v2 API with an API key. |
+| Claude | Yours | Anthropic's official Java SDK. Model set in Settings (default `claude-opus-5-5`); answers come back as schema-checked JSON, and a declined request goes to Anthropic's recommended fallback model. The SDK makes the plugin about 40 MB. |
 | OpenAI | Yours | Model set in Settings (default `gpt-5-mini`). |
 
 Placeholders (`%1$s`, `%d`), inline markup and escapes are swapped for tokens before sending and put back after; a
@@ -78,5 +79,5 @@ formatter over it, so text with markup is written into the document directly.
 
 ## Status (2026-10-21)
 
-Phases 0–3 are built and tested (75 tests). What's left is in [RELEASE.md](RELEASE.md): accounts, the paid-plan
+Phases 0–3 are built and tested (78 tests). What's left is in [RELEASE.md](RELEASE.md): accounts, the paid-plan
 product code, screenshots and the listing.

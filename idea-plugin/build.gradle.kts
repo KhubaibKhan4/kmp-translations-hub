@@ -43,6 +43,11 @@ dependencies {
         exclude(group = "org.jetbrains.kotlin")
     }
 
+    // Claude translation provider. The IDE provides the Kotlin stdlib and kotlin-reflect the SDK needs (1.9+).
+    implementation("com.anthropic:anthropic-java:2.75.0") {
+        exclude(group = "org.jetbrains.kotlin")
+    }
+
     intellijPlatform {
         if (localIde != null) local(localIde) else intellijIdea(providers.gradleProperty("translationshub.ciPlatformVersion").get())
         // Optional at runtime (kotlin-features.xml): extracting hardcoded strings needs the Kotlin PSI.

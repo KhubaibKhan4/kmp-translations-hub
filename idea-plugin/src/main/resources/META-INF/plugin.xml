@@ -17,7 +17,7 @@
     <p>Pro (free trial through JetBrains Marketplace):</p>
     <ul>
       <li><b>Translate Changes</b>: only missing and outdated strings, every locale at once, placeholders protected.
-          Apple on-device translation and MyMemory need no key; or use your own DeepL, Google Cloud or OpenAI key.</li>
+          Apple on-device translation and MyMemory need no key; or use your own DeepL, Google Cloud, Claude or OpenAI key.</li>
       <li>Plural forms each language needs (Arabic 6, Polish 4, Japanese 1), and checks for escapes, untranslated
           text, length and unused keys.</li>
       <li><b>Extract</b> hardcoded strings from Compose UI code to <code>composeResources</code>, one at a time or the

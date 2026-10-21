@@ -29,6 +29,7 @@ class TranslationSettings : PersistentStateComponent<TranslationSettings.State> 
         /** The language of the default `values` folder, which the folder name doesn't say. */
         var sourceLanguage: String = "en"
         var openAiModel: String = "gpt-5-mini"
+        var claudeModel: String = ClaudeProvider.DEFAULT_MODEL
         var myMemoryEmail: String = ""
     }
 
@@ -54,6 +55,7 @@ class TranslationSettings : PersistentStateComponent<TranslationSettings.State> 
         MyMemoryProvider { state.myMemoryEmail },
         DeepLProvider { key("deepl") },
         GoogleCloudProvider { key("google") },
+        ClaudeProvider({ key("claude") }, { state.claudeModel }),
         OpenAiProvider({ key("openai") }, { state.openAiModel }),
     )
 
@@ -75,7 +77,8 @@ class TranslationSettingsConfigurable : Configurable {
     private val sourceLanguage = JBTextField(8)
     private val email = JBTextField(24)
     private val openAiModel = JBTextField(24)
-    private val keys = listOf("deepl", "google", "openai").associateWith { JBPasswordField().apply { columns = 32 } }
+    private val claudeModel = JBTextField(24)
+    private val keys = listOf("deepl", "google", "claude", "openai").associateWith { JBPasswordField().apply { columns = 32 } }
 
     override fun getDisplayName() = "KMP Translations Hub"
 
@@ -91,6 +94,8 @@ class TranslationSettingsConfigurable : Configurable {
             .addLabeledComponent("DeepL API key:", keys.getValue("deepl"))
             .addComponentToRightColumn(hint("DeepL API Free includes 500,000 characters a month."))
             .addLabeledComponent("Google Cloud API key:", keys.getValue("google"))
+            .addLabeledComponent("Anthropic API key:", keys.getValue("claude"))
+            .addLabeledComponent("Claude model:", claudeModel)
             .addLabeledComponent("OpenAI API key:", keys.getValue("openai"))
             .addLabeledComponent("OpenAI model:", openAiModel)
             .addComponentToRightColumn(hint("Keys are stored in the IDE's password safe. Strings are sent to the service you choose, with their keys and XML comments as context."))
@@ -103,7 +108,7 @@ class TranslationSettingsConfigurable : Configurable {
     override fun isModified(): Boolean {
         val s = settings.state
         return provider.item?.id != s.provider || sourceLanguage.text.trim() != s.sourceLanguage || email.text.trim() != s.myMemoryEmail ||
-            openAiModel.text.trim() != s.openAiModel || keys.any { (id, field) -> String(field.password) != (settings.key(id) ?: "") }
+            openAiModel.text.trim() != s.openAiModel || claudeModel.text.trim() != s.claudeModel || keys.any { (id, field) -> String(field.password) != (settings.key(id) ?: "") }
     }
 
     override fun apply() {
@@ -112,6 +117,7 @@ class TranslationSettingsConfigurable : Configurable {
         s.sourceLanguage = sourceLanguage.text.trim().ifEmpty { "en" }
         s.myMemoryEmail = email.text.trim()
         s.openAiModel = openAiModel.text.trim()
+        s.claudeModel = claudeModel.text.trim().ifEmpty { ClaudeProvider.DEFAULT_MODEL }
         keys.forEach { (id, field) -> settings.setKey(id, String(field.password)) }
     }
 
@@ -121,6 +127,7 @@ class TranslationSettingsConfigurable : Configurable {
         sourceLanguage.text = s.sourceLanguage
         email.text = s.myMemoryEmail
         openAiModel.text = s.openAiModel
+        claudeModel.text = s.claudeModel
         keys.forEach { (id, field) -> field.text = settings.key(id) ?: "" }
     }
 }

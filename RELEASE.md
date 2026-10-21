@@ -14,6 +14,9 @@
 
 ## Build steps
 
+- [ ] The plugin is about 40 MB because of Anthropic's Java SDK (the rest is under 0.5 MB). JetBrains recommends
+      obfuscating paid plugins (optional); if you do, keep `com.anthropic`, Jackson and OkHttp out of it.
+
 - [ ] Screenshots: the Translations tab on a real project (KhataPay), the side panel with Polish plurals, Translate
       Changes with its progress, the inspection in `strings.xml`, Alt+Enter "Extract to composeResources".
 - [ ] A 60–90 s demo video.
