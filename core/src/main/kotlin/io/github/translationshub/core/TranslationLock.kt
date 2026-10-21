@@ -80,6 +80,16 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
         }
     }
 
+    /** Moves the records of a renamed key, so its translations don't look untracked afterwards. */
+    fun rename(key: ResourceKey, newKey: ResourceKey) {
+        for (byKey in records.values) byKey.remove(key)?.let { byKey[newKey] = it }
+    }
+
+    fun remove(key: ResourceKey) {
+        records.values.forEach { it.remove(key) }
+        records.values.removeIf { it.isEmpty() }
+    }
+
     /** Drops records of keys and locales that no longer exist. */
     fun prune(set: TranslationSet) {
         val keys = set.keys.toSet()

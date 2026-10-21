@@ -1,36 +1,95 @@
 package io.github.translationshub.idea
 
 import io.github.translationshub.core.ArrayValue
+import io.github.translationshub.core.Checks
 import io.github.translationshub.core.Locale
 import io.github.translationshub.core.PluralCategory
 import io.github.translationshub.core.PluralsValue
+import io.github.translationshub.core.Problem
 import io.github.translationshub.core.ResourceEntry
 import io.github.translationshub.core.ResourceKey
 import io.github.translationshub.core.ResourceKind
 import io.github.translationshub.core.TextValue
+import io.github.translationshub.core.TranslationLock
 import io.github.translationshub.core.TranslationSet
+import io.github.translationshub.core.TranslationState
+import io.github.translationshub.core.TranslationStatus
 import javax.swing.table.AbstractTableModel
 
+/** One cell: the default column has a null [locale]. */
+data class Cell(val key: ResourceKey, val locale: Locale?)
+
 /**
- * Keys down, `Key | Default | <locale>…` across. Phase 0 edits `<string>` cells; plurals and arrays are shown as a
- * summary and are edited in Phase 1's side panel.
+ * Keys down, `Key | Default | <locale>…` across, with each cell's problems and lock status. `<string>` cells are
+ * edited in place; plurals and arrays in the side panel.
  */
-class TranslationsTableModel(set: TranslationSet, private val onEdit: (ResourceKey, Locale?, String) -> Unit) :
+class TranslationsTableModel(set: TranslationSet, lock: TranslationLock, private val onEdit: (ResourceKey, Locale?, String) -> Unit) :
     AbstractTableModel() {
 
     var set: TranslationSet = set
         private set
+    var problems: List<Problem> = emptyList()
+        private set
+    private var problemsByCell: Map<Cell, List<Problem>> = emptyMap()
+    private var statuses: Map<Cell, TranslationStatus> = emptyMap()
 
-    fun update(newSet: TranslationSet) {
+    init {
+        index(lock)
+    }
+
+    fun update(newSet: TranslationSet, lock: TranslationLock) {
         val columnsChanged = newSet.locales != set.locales
         set = newSet
+        index(lock)
         if (columnsChanged) fireTableStructureChanged() else fireTableDataChanged()
+    }
+
+    private fun index(lock: TranslationLock) {
+        problems = Checks.run(set)
+        // A source-level problem (e.g. a <plurals> without `other`) belongs to the default column.
+        problemsByCell = problems.groupBy { Cell(it.key, it.locale) }
+        statuses = buildMap {
+            for (key in set.keys) for (locale in set.locales) {
+                if (set.translation(key, locale) != null) put(Cell(key, locale), lock.status(set, key, locale))
+            }
+        }
     }
 
     fun key(row: Int): ResourceKey = set.keys[row]
 
     /** Null for the Key and Default columns. */
     fun locale(column: Int): Locale? = set.locales.getOrNull(column - FIRST_LOCALE_COLUMN)
+
+    fun cell(row: Int, column: Int) = Cell(key(row), locale(column))
+
+    fun problems(cell: Cell): List<Problem> = problemsByCell[cell].orEmpty()
+
+    fun status(cell: Cell): TranslationStatus? = statuses[cell]
+
+    fun rowHasProblems(row: Int): Boolean {
+        val key = key(row)
+        return problemsByCell.keys.any { it.key == key }
+    }
+
+    fun rowIsMissing(row: Int): Boolean {
+        val key = key(row)
+        return set.source(key)?.translatable != false && set.locales.any { set.translation(key, it) == null }
+    }
+
+    fun rowIsStale(row: Int): Boolean {
+        val key = key(row)
+        return set.locales.any { statuses[Cell(key, it)]?.state == TranslationState.STALE }
+    }
+
+    /** Text of the key and every cell, for search. */
+    fun searchText(row: Int): String {
+        val key = key(row)
+        return buildString {
+            append(key.name)
+            set.source(key)?.value?.texts?.forEach { append('\n').append(it) }
+            for (locale in set.locales) set.translation(key, locale)?.value?.texts?.forEach { append('\n').append(it) }
+        }
+    }
 
     override fun getRowCount() = set.keys.size
 

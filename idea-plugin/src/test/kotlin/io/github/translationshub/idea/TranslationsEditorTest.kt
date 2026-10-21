@@ -92,4 +92,49 @@ class TranslationsEditorTest : BasePlatformTestCase() {
         assertEquals(TextValue("Neu"), editor.model.set.translation(editor.model.key(1000), Locale("de"))!!.value)
         assertTrue("Reloading took $reload ms", reload < 1000)
     }
+
+    fun `test search and filters`() {
+        val source = resources(
+            "values" to "    <string name=\"hello\">Hello</string>\n    <string name=\"bye\">Bye %1\$s</string>\n    <string name=\"brand\" translatable=\"false\">Acme</string>\n",
+            "values-de" to "    <string name=\"hello\">Hallo</string>\n    <string name=\"bye\">Tschüss %1\$d</string>\n",
+            "values-fr" to "    <string name=\"hello\">Bonjour</string>\n",
+        )
+        val editor = open(source)
+        fun shown() = (0 until editor.table.rowCount).map { editor.model.key(editor.table.convertRowIndexToModel(it)).name }
+
+        editor.search.text = "bonj"
+        assertEquals(listOf("hello"), shown())
+        editor.search.text = ""
+        editor.filter.item = TranslationsEditor.Filter.MISSING
+        assertEquals(listOf("bye"), shown())
+        editor.filter.item = TranslationsEditor.Filter.PROBLEMS
+        assertEquals(listOf("bye"), shown())
+        editor.filter.item = TranslationsEditor.Filter.ALL
+        assertEquals(3, shown().size)
+        assertTrue(editor.model.problems(Cell(editor.model.key(1), Locale("de"))).any { it is io.github.translationshub.core.Problem.PlaceholderMismatch })
+    }
+
+    fun `test the side panel edits plural forms the language needs`() {
+        val source = resources(
+            "values" to "    <plurals name=\"files\">\n        <item quantity=\"one\">One file</item>\n        <item quantity=\"other\">%d files</item>\n    </plurals>\n",
+            "values-pl" to "",
+        )
+        val editor = open(source)
+        val pl = Locale("pl")
+        editor.select(Cell(editor.model.key(0), pl))
+        assertEquals(Cell(editor.model.key(0), pl), editor.detail.shownCell)
+        // Polish uses one, few, many and other: all four get a field, empty ones aren't written except `other`.
+        val value = editor.detail.editedValue() as io.github.translationshub.core.PluralsValue
+        assertEquals(mapOf(io.github.translationshub.core.PluralCategory.OTHER to ""), value.items)
+
+        editor.controller.setValue(editor.model.key(0), pl, io.github.translationshub.core.PluralsValue(mapOf(
+            io.github.translationshub.core.PluralCategory.ONE to "1 plik",
+            io.github.translationshub.core.PluralCategory.FEW to "%d pliki",
+            io.github.translationshub.core.PluralCategory.MANY to "%d plików",
+            io.github.translationshub.core.PluralCategory.OTHER to "%d pliku",
+        )))
+        editor.reload()
+        assertTrue(editor.model.problems.isEmpty())
+        assertEquals(4, (editor.detail.editedValue() as io.github.translationshub.core.PluralsValue).items.size)
+    }
 }

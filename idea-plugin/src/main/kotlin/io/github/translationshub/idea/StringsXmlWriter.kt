@@ -44,6 +44,14 @@ object StringsXmlWriter {
         return if (next != null) plurals.addBefore(item, next) as XmlTag else plurals.addSubTag(item, false)
     }
 
+    /** Removes one `<item quantity=…>` of a `<plurals>`; false if it wasn't there. */
+    fun removePluralItem(file: XmlFile, name: String, category: PluralCategory): Boolean {
+        val plurals = findTag(file, ResourceKey(ResourceKind.PLURALS, name)) ?: return false
+        val item = plurals.findSubTags("item").firstOrNull { it.getAttributeValue("quantity") == category.xmlName } ?: return false
+        deleteWithLine(item)
+        return true
+    }
+
     /** Replaces a `<string-array>`'s items. */
     fun setArrayItems(file: XmlFile, name: String, items: List<String>, after: ResourceKey? = null): XmlTag {
         val key = ResourceKey(ResourceKind.ARRAY, name)
