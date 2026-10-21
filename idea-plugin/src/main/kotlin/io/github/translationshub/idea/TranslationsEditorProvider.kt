@@ -15,7 +15,11 @@ class TranslationsEditorProvider : FileEditorProvider, DumbAware {
     override fun createEditor(project: Project, file: VirtualFile): FileEditor =
         TranslationsEditor(project, file, ResourceFolders.rootOf(file)!!)
 
-    override fun getEditorTypeId() = "kmp-translations-hub"
+    override fun getEditorTypeId() = TYPE_ID
 
     override fun getPolicy() = FileEditorPolicy.PLACE_AFTER_DEFAULT_EDITOR
+
+    companion object {
+        const val TYPE_ID = "kmp-translations-hub"
+    }
 }

@@ -192,8 +192,12 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
         val set = model.set
         val shown = if (table.rowCount != set.keys.size) "${table.rowCount} of " else ""
         val problems = model.problems.size
+        val variants = set.variantFiles.map { it.qualifiers.folderName }.distinct()
         summary.text = "$shown${set.keys.size} keys · ${set.locales.size} locales · " +
-            if (problems == 0) "no problems" else "$problems problems"
+            (if (problems == 0) "no problems" else "$problems problems") +
+            if (variants.isEmpty()) "" else " · ${variants.size} variant folders not shown"
+        // Theme and density folders override single keys rather than translate the app; name them on hover.
+        summary.toolTipText = variants.takeIf { it.isNotEmpty() }?.joinToString(", ", "Not shown: ")
     }
 
     /** Runs a change and re-reads; a refused change (e.g. a duplicate key) is shown instead of thrown. */

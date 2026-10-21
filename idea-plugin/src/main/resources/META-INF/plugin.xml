@@ -10,6 +10,8 @@
       <li>Strings, plurals and string-arrays, with checks for missing translations, mismatched placeholders, plural
           forms each language needs and array sizes.</li>
       <li>Edits keep your files' formatting and comments, and each one is a single Undo.</li>
+      <li>⌘/Ctrl+click <code>Res.string.hello</code> to jump to its XML, and a gutter icon on each key to find the
+          Kotlin code that uses it.</li>
     </ul>
     ]]></description>
 
@@ -18,5 +20,10 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="io.github.translationshub.idea.TranslationsEditorProvider"/>
+        <gotoDeclarationHandler implementation="io.github.translationshub.idea.ResourceGotoDeclarationHandler"/>
+        <codeInsight.lineMarkerProvider language="XML" implementationClass="io.github.translationshub.idea.ResourceUsagesLineMarkerProvider"/>
+        <localInspection language="XML" shortName="ComposeTranslations" displayName="Compose Multiplatform translation problems"
+                         groupName="KMP Translations Hub" enabledByDefault="true" level="WARNING"
+                         implementationClass="io.github.translationshub.idea.TranslationsInspection"/>
     </extensions>
 </idea-plugin>

@@ -53,6 +53,13 @@ dependencies {
     testImplementation("org.opentest4j:opentest4j:1.3.0")
 }
 
+/** The newest section of CHANGELOG.md as HTML, for the Marketplace "What's New" tab. */
+val changeNotesHtml = providers.fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md")).asText.map { md ->
+    val section = md.substringAfter("\n## ").substringAfter("\n").substringBefore("\n## ").trim()
+    val items = section.lines().filter { it.startsWith("- ") }.joinToString("") { "<li>${it.removePrefix("- ")}</li>" }
+    "<ul>$items</ul>"
+}
+
 intellijPlatform {
     buildSearchableOptions = false
     instrumentCode = false
@@ -62,6 +69,7 @@ intellijPlatform {
         id = "io.github.khubaibkhan4.kmptranslationshub"
         name = "KMP Translations Hub"
         version = project.version.toString()
+        changeNotes = changeNotesHtml
         vendor {
             name = providers.gradleProperty("translationshub.vendorName")
             url = providers.gradleProperty("translationshub.vendorUrl")
@@ -70,6 +78,29 @@ intellijPlatform {
             sinceBuild = "251"
             untilBuild = provider { null }
         }
+        // Freemium plan: only once JetBrains Marketplace has approved it and assigned the product code, e.g.
+        // -Ptranslationshub.productCode=PKMPTRANSLATIONS. Without it the build is free and every Pro feature is on.
+        providers.gradleProperty("translationshub.productCode").orNull?.let { productCode ->
+            productDescriptor {
+                code = productCode
+                releaseDate = providers.gradleProperty("translationshub.releaseDate")
+                releaseVersion = providers.gradleProperty("translationshub.releaseVersion")
+                optional = true
+            }
+        }
+    }
+
+    // ./gradlew :idea-plugin:signPlugin — values come from CI secrets, never from files in the repo.
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+
+    // ./gradlew :idea-plugin:publishPlugin — needs a JetBrains Marketplace permanent token.
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+        channels = providers.gradleProperty("translationshub.marketplaceChannel").map { listOf(it) }
     }
 
     pluginVerification {
@@ -95,6 +126,8 @@ tasks.named<org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask>("runIde") {
 
 tasks.named<Test>("test") {
     maxHeapSize = "2g"
+    // Pro features are on in a build without a product code; the tests that check the free tier turn them off.
+    providers.gradleProperty("translationshub.pro").orNull?.let { systemProperty("translationshub.pro", it) }
 }
 
 tasks.named<Zip>("buildPlugin") {
