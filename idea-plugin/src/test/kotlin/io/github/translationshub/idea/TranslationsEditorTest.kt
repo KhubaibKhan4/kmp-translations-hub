@@ -99,6 +99,7 @@ class TranslationsEditorTest : BasePlatformTestCase() {
             "values-de" to "    <string name=\"hello\">Hallo</string>\n    <string name=\"bye\">Tschüss %1\$d</string>\n",
             "values-fr" to "    <string name=\"hello\">Bonjour</string>\n",
         )
+        myFixture.addFileToProject("app/src/commonMain/kotlin/Ui.kt", "val keys = listOf(Res.string.hello, Res.string.bye, Res.string.brand)\n")
         val editor = open(source)
         fun shown() = (0 until editor.table.rowCount).map { editor.model.key(editor.table.convertRowIndexToModel(it)).name }
 
@@ -119,6 +120,7 @@ class TranslationsEditorTest : BasePlatformTestCase() {
             "values" to "    <plurals name=\"files\">\n        <item quantity=\"one\">One file</item>\n        <item quantity=\"other\">%d files</item>\n    </plurals>\n",
             "values-pl" to "",
         )
+        myFixture.addFileToProject("app/src/commonMain/kotlin/Ui.kt", "val files = Res.plurals.files\n")
         val editor = open(source)
         val pl = Locale("pl")
         editor.select(Cell(editor.model.key(0), pl))
@@ -136,5 +138,12 @@ class TranslationsEditorTest : BasePlatformTestCase() {
         editor.reload()
         assertTrue(editor.model.problems.isEmpty())
         assertEquals(4, (editor.detail.editedValue() as io.github.translationshub.core.PluralsValue).items.size)
+    }
+
+    fun `test keys no Kotlin code uses are reported`() {
+        val source = resources("values" to "    <string name=\"used\">Used</string>\n    <string name=\"forgotten\">Forgotten</string>\n")
+        myFixture.addFileToProject("app/src/commonMain/kotlin/Ui.kt", "@Composable fun A() = Text(stringResource(Res.string.used))\n")
+        val unused = open(source).model.problems.filterIsInstance<io.github.translationshub.core.Problem.Unused>()
+        assertEquals(listOf("forgotten"), unused.map { it.key.name })
     }
 }

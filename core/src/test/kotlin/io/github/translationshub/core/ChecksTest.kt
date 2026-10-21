@@ -87,3 +87,42 @@ class ChecksTest {
         assertEquals(setOf(PluralCategory.ONE, PluralCategory.OTHER), PluralRules.categories(Locale("ur")))
     }
 }
+
+class ProChecksTest {
+
+    private fun set(source: String, german: String) = TranslationSet(
+        "/res",
+        listOf(
+            StringsFile("/res/values/strings.xml", FolderQualifiers(null), StringsXmlParser.parse("<resources>$source</resources>")),
+            StringsFile("/res/values-de/strings.xml", FolderQualifiers(Locale("de")), StringsXmlParser.parse("<resources>$german</resources>")),
+        ),
+    )
+
+    @Test
+    fun `escapes, untranslated and length`() {
+        val problems = Checks.run(set(
+            """<string name="a">Line\none é It\'s</string><string name="b">Open settings</string><string name="c">OK</string><string name="d">Save</string>""",
+            """<string name="a">Zeile\rzwei</string><string name="b">Open settings</string><string name="c">OK</string><string name="d">Speichern und alle Änderungen übernehmen</string>""",
+        ))
+        assertEquals(listOf("a" to "\\r"), problems.filterIsInstance<Problem.UnknownEscape>().map { it.key.name to it.escape })
+        assertEquals(listOf("b"), problems.filterIsInstance<Problem.Untranslated>().map { it.key.name })
+        assertEquals(listOf("d"), problems.filterIsInstance<Problem.TooLong>().map { it.key.name })
+    }
+
+    @Test
+    fun `free tier checks only what the free plan lists`() {
+        val s = set(
+            """<plurals name="files"><item quantity="one">One</item><item quantity="other">%d</item></plurals><string name="b">Open settings</string>""",
+            """<plurals name="files"><item quantity="other">%d Dateien</item></plurals><string name="b">Open settings</string>""",
+        )
+        assertTrue(Checks.run(s).any { it is Problem.MissingPluralCategories })
+        assertTrue(Checks.run(s, CheckOptions.FREE).none { it is Problem.MissingPluralCategories || it is Problem.Untranslated })
+    }
+
+    @Test
+    fun `unused keys`() {
+        val s = set("""<string name="used">A</string><string name="unused">B</string>""", "")
+        val unused = Checks.run(s, CheckOptions(usedKeys = setOf(ResourceKey(ResourceKind.STRING, "used")))).filterIsInstance<Problem.Unused>()
+        assertEquals(listOf("unused"), unused.map { it.key.name })
+    }
+}

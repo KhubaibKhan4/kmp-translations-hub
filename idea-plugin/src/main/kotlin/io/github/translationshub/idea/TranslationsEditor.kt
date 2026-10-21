@@ -68,11 +68,11 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
     enum class Filter(val label: String) { ALL("All keys"), MISSING("Missing translations"), PROBLEMS("With problems"), STALE("Outdated") }
 
     val controller = TranslationsController(project, root)
-    val model = TranslationsTableModel(controller.read(), controller.lock()) { key, locale, text ->
+    val model = TranslationsTableModel(controller.read(), controller.lock(), { CheckSettings.options(project) }) { key, locale, text ->
         edit { controller.setValue(key, locale, TextValue(text)) }
     }
     val table = JBTable(model)
-    val detail = CellDetailPanel { cell, value -> edit { controller.setValue(cell.key, cell.locale, value) } }
+    val detail = CellDetailPanel({ ProLicense.isLicensed() }) { cell, value -> edit { controller.setValue(cell.key, cell.locale, value) } }
     val search = SearchTextField(false)
     val filter = ComboBox(Filter.entries.toTypedArray())
     private val sorter = TableRowSorter(model)

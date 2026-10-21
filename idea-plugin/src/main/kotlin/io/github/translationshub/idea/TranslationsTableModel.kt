@@ -1,6 +1,7 @@
 package io.github.translationshub.idea
 
 import io.github.translationshub.core.ArrayValue
+import io.github.translationshub.core.CheckOptions
 import io.github.translationshub.core.Checks
 import io.github.translationshub.core.Locale
 import io.github.translationshub.core.PluralCategory
@@ -23,8 +24,12 @@ data class Cell(val key: ResourceKey, val locale: Locale?)
  * Keys down, `Key | Default | <locale>…` across, with each cell's problems and lock status. `<string>` cells are
  * edited in place; plurals and arrays in the side panel.
  */
-class TranslationsTableModel(set: TranslationSet, lock: TranslationLock, private val onEdit: (ResourceKey, Locale?, String) -> Unit) :
-    AbstractTableModel() {
+class TranslationsTableModel(
+    set: TranslationSet,
+    lock: TranslationLock,
+    private val options: () -> CheckOptions = { CheckOptions() },
+    private val onEdit: (ResourceKey, Locale?, String) -> Unit,
+) : AbstractTableModel() {
 
     var set: TranslationSet = set
         private set
@@ -45,7 +50,7 @@ class TranslationsTableModel(set: TranslationSet, lock: TranslationLock, private
     }
 
     private fun index(lock: TranslationLock) {
-        problems = Checks.run(set)
+        problems = Checks.run(set, options())
         // A source-level problem (e.g. a <plurals> without `other`) belongs to the default column.
         problemsByCell = problems.groupBy { Cell(it.key, it.locale) }
         statuses = buildMap {

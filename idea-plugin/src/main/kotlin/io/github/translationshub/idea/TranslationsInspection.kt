@@ -33,7 +33,7 @@ class TranslationsInspection : LocalInspectionTool() {
             val here = set.sourceFiles.any { it.path == virtualFile.path }
             val locale = set.locales.firstOrNull { l -> set.filesFor(l).any { it.path == virtualFile.path } }
             if (!here && locale == null) return
-            val problems = Checks.run(set)
+            val problems = Checks.run(set, CheckSettings.options(file.project))
 
             if (here) {
                 problems.filterIsInstance<Problem.Missing>().groupBy { it.key }.forEach { (key, missing) ->
@@ -57,7 +57,7 @@ class TranslationsInspection : LocalInspectionTool() {
                 val element = nameElement(xml, problem.key) ?: continue
                 val fixes = buildList<LocalQuickFix> {
                     if (problem is Problem.MissingPluralCategories) add(AddPluralFormsFix(problem.key, problem.locale, problem.missing))
-                    if (problem is Problem.NotInSource) add(DeleteKeyFix(problem.key))
+                    if (problem is Problem.NotInSource || problem is Problem.Unused) add(DeleteKeyFix(problem.key, everywhere = problem is Problem.Unused))
                     add(OpenInTranslationsFix(problem.key, problem.locale))
                 }
                 holder.registerProblem(element, problem.message, *fixes.toTypedArray())
@@ -81,12 +81,15 @@ class TranslationsInspection : LocalInspectionTool() {
         }
     }
 
-    private class DeleteKeyFix(val key: ResourceKey) : LocalQuickFix {
-        override fun getFamilyName() = "Delete key left behind"
-        override fun startInWriteAction() = true
+    /** Deletes a key left behind in a locale file, or an unused key from the default file and every locale. */
+    private class DeleteKeyFix(val key: ResourceKey, val everywhere: Boolean) : LocalQuickFix {
+        override fun getFamilyName() = if (everywhere) "Delete unused key in every locale" else "Delete key left behind"
+        override fun startInWriteAction() = !everywhere
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
             val file = descriptor.psiElement.containingFile as? XmlFile ?: return
-            StringsXmlWriter.delete(file, key)
+            if (!everywhere) return StringsXmlWriter.delete(file, key).let { }
+            val root = ResourceFolders.rootOf(file.virtualFile ?: return) ?: return
+            TranslationsController(project, root).deleteKey(key)
         }
     }
 

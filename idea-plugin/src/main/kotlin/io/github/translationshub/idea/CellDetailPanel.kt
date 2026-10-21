@@ -34,7 +34,11 @@ import javax.swing.KeyStroke
  * kind: a text area for strings, one field per plural form the language uses, one line per array item.
  * Apply (or ⌘/Ctrl+Enter) writes it through [onApply].
  */
-class CellDetailPanel(private val onApply: (Cell, ResourceValue) -> Unit) : JPanel(BorderLayout()) {
+class CellDetailPanel(
+    /** Pro: a field for every plural form the locale's language uses. Free: the forms the value has, plus `other`. */
+    private val perLanguagePlurals: () -> Boolean = { true },
+    private val onApply: (Cell, ResourceValue) -> Unit,
+) : JPanel(BorderLayout()) {
 
     private var cell: Cell? = null
     private var readValue: () -> ResourceValue? = { null }
@@ -84,12 +88,12 @@ class CellDetailPanel(private val onApply: (Cell, ResourceValue) -> Unit) : JPan
             }
             ResourceKind.PLURALS -> {
                 val items = (entry?.value as? PluralsValue)?.items.orEmpty()
-                val needed = cell.locale?.let(PluralRules::categories) ?: setOf(PluralCategory.ONE, PluralCategory.OTHER)
+                val needed = cell.locale?.takeIf { perLanguagePlurals() }?.let(PluralRules::categories) ?: setOf(PluralCategory.ONE, PluralCategory.OTHER)
                 val fields = (needed + items.keys).sorted().associateWith { category ->
                     JBTextField(items[category].orEmpty()).apply { isEditable = editable; submitOnCtrlEnter(this) }
                 }
                 for ((category, field) in fields) {
-                    val label = category.xmlName + if (category in needed) "" else " (not used in ${cell.locale?.tag})"
+                    val label = category.xmlName + if (category in needed || !perLanguagePlurals()) "" else " (not used in ${cell.locale?.tag})"
                     form.addLabeledComponent("$label:", field)
                 }
                 // An empty field removes that form; `other` is required, so it is always written.
