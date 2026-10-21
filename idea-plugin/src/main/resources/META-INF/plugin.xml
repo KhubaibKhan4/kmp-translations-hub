@@ -20,6 +20,9 @@
     <depends optional="true" config-file="kotlin-features.xml">org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <applicationConfigurable parentId="tools" id="kmp.translations.hub" displayName="KMP Translations Hub"
+                                 instance="io.github.translationshub.idea.translate.TranslationSettingsConfigurable"/>
+        <notificationGroup id="KMP Translations Hub" displayType="BALLOON"/>
         <fileEditorProvider implementation="io.github.translationshub.idea.TranslationsEditorProvider"/>
         <gotoDeclarationHandler implementation="io.github.translationshub.idea.ResourceGotoDeclarationHandler"/>
         <codeInsight.lineMarkerProvider language="XML" implementationClass="io.github.translationshub.idea.ResourceUsagesLineMarkerProvider"/>

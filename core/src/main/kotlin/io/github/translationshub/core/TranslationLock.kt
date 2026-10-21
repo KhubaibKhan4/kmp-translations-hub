@@ -162,8 +162,8 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
     }
 }
 
-/** Just enough JSON for the lock file (objects, arrays, strings, numbers, booleans, null), so core stays dependency-free. */
-internal object Json {
+/** Just enough JSON (objects, arrays, strings, numbers, booleans, null) for the lock file and the translation services, so core stays dependency-free. */
+object Json {
 
     fun quote(s: String): String = buildString {
         append('"')
@@ -171,10 +171,42 @@ internal object Json {
             c == '"' -> append("\\\"")
             c == '\\' -> append("\\\\")
             c == '\n' -> append("\\n")
-            c < ' ' -> append("\\u%04x".format(c.code))
+            c == '\r' -> append("\\r")
+            c == '\t' -> append("\\t")
+            c < ' ' || c == '\u2028' || c == '\u2029' -> append("\\u%04x".format(c.code))
             else -> append(c)
         }
         append('"')
+    }
+
+    /** Maps, lists, strings, numbers, booleans and null, as compact JSON. */
+    fun write(value: Any?): String = buildString { write(value, this) }
+
+    private fun write(value: Any?, out: StringBuilder) {
+        when (value) {
+            null -> out.append("null")
+            is String -> out.append(quote(value))
+            is Boolean, is Int, is Long -> out.append(value.toString())
+            is Number -> out.append(value.toDouble().let { if (it % 1.0 == 0.0 && kotlin.math.abs(it) < 1e15) it.toLong().toString() else it.toString() })
+            is Map<*, *> -> {
+                out.append('{')
+                value.entries.forEachIndexed { i, (k, v) ->
+                    if (i > 0) out.append(',')
+                    out.append(quote(k.toString())).append(':')
+                    write(v, out)
+                }
+                out.append('}')
+            }
+            is Iterable<*> -> {
+                out.append('[')
+                value.forEachIndexed { i, v ->
+                    if (i > 0) out.append(',')
+                    write(v, out)
+                }
+                out.append(']')
+            }
+            else -> error("Can't write ${value::class.simpleName} as JSON")
+        }
     }
 
     fun parse(text: String): Any? = Parser(text).run { value().also { skipSpace(); require(i == s.length) { "Trailing JSON at $i" } } }

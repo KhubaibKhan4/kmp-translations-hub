@@ -239,6 +239,11 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
             val locale = LocaleChooser.choose(project, model.set.locales) ?: return@action
             edit { controller.addLocale(locale) }
         },
+        action("Translate Changes…", AllIcons.Actions.Lightning) {
+            ProLicense.runOrUpsell(project, "Translate changes") {
+                io.github.translationshub.idea.translate.TranslateChanges.start(project, controller) { reload() }
+            }
+        },
         action("Export…", AllIcons.ToolbarDecorator.Export) {
             ProLicense.runOrUpsell(project, "Export") { ExchangeActions.export(project, model.set) }
         },
