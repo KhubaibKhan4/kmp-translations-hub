@@ -45,14 +45,23 @@ class TranslationsController(private val project: Project, val root: VirtualFile
      * Writes machine translations for one locale, as one command, and records them in the lock file (creating it):
      * from then on only new or changed source strings are sent again.
      */
-    fun applyTranslations(locale: Locale, values: Map<ResourceKey, ResourceValue>, provider: String) {
+    fun applyTranslations(locale: Locale, values: Map<ResourceKey, ResourceValue>, provider: String) =
+        applyValues(locale, values, Origin.Machine(provider), "Translate ${values.size} strings to ${locale.tag}")
+
+    /** Writes imported translations (from a translator's file) as a person's, in one command. */
+    fun importValues(locale: Locale, values: Map<ResourceKey, ResourceValue>) =
+        applyValues(locale, values, Origin.Human, "Import ${values.size} ${locale.tag} translations")
+
+    private fun applyValues(locale: Locale, values: Map<ResourceKey, ResourceValue>, origin: Origin, name: String) {
         if (values.isEmpty()) return
+        if (locale !in read().locales) addLocale(locale)
         val set = read()
         val targets = values.keys.mapNotNull { key -> targetFile(set, key, locale)?.let { key to it } }.toMap()
-        command("Translate ${values.size} strings to ${locale.tag}", targets.values.distinct()) {
+        command(name, targets.values.distinct()) {
             for ((key, target) in targets) write(set, target, key, locale, values.getValue(key))
-            updateLock(create = true, before = set) { lock ->
-                for (key in targets.keys) set.source(key)?.let { lock.put(key, locale, it.value, values.getValue(key), Origin.Machine(provider)) }
+            // Machine translations start the lock file; imports only update one that exists.
+            updateLock(create = origin is Origin.Machine, before = set) { lock ->
+                for (key in targets.keys) set.source(key)?.let { lock.put(key, locale, it.value, values.getValue(key), origin) }
             }
         }
     }

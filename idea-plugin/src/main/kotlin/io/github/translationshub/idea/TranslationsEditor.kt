@@ -239,6 +239,12 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
             val locale = LocaleChooser.choose(project, model.set.locales) ?: return@action
             edit { controller.addLocale(locale) }
         },
+        action("Export…", AllIcons.ToolbarDecorator.Export) {
+            ProLicense.runOrUpsell(project, "Export") { ExchangeActions.export(project, model.set) }
+        },
+        action("Import…", AllIcons.ToolbarDecorator.Import) {
+            ProLicense.runOrUpsell(project, "Import") { edit { ExchangeActions.import(project, controller) } }
+        },
     )
 
     private fun action(text: String, icon: javax.swing.Icon, enabled: () -> Boolean = { true }, perform: () -> Unit): AnAction =

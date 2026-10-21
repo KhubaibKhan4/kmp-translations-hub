@@ -111,6 +111,26 @@ class TranslationsControllerTest : BasePlatformTestCase() {
         assertNull(lock.record(bye, de))
     }
 
+    fun `test import a CSV and an Android strings xml`() {
+        val csv = ExchangeActions.exportFiles(controller.read(), ExchangeActions.Format.CSV).getValue("translations.csv")
+            .replace("bye,Bye,", "bye,Bye,Tschüss")
+        val csvFile = myFixture.addFileToProject("exchange/translations.csv", csv).virtualFile
+        val (written, skipped) = ExchangeActions.importFile(controller, csvFile) { null }
+        assertEquals(mapOf(de to 2), written) // hello (unchanged) and bye
+        assertEquals(TextValue("Tschüss"), controller.read().translation(ResourceKey(ResourceKind.STRING, "bye"), de)!!.value)
+        assertTrue(skipped.isEmpty())
+
+        val android = myFixture.addFileToProject(
+            "android/res/values-fr/strings.xml",
+            "<resources><string name=\"hello\">Bonjour</string><string name=\"legacy\">Old</string></resources>",
+        ).virtualFile
+        val (fr, notFound) = ExchangeActions.importFile(controller, android) { null }
+        assertEquals(mapOf(Locale("fr") to 1), fr)
+        assertEquals(listOf("legacy"), notFound)
+        // The locale didn't exist: importing created values-fr.
+        assertEquals(TextValue("Bonjour"), controller.read().translation(hello, Locale("fr"))!!.value)
+    }
+
     private fun <T : Any> assertNotNull(value: T?): T {
         assertTrue(value != null)
         return value!!
