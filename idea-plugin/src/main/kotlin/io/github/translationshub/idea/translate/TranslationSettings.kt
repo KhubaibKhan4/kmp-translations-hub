@@ -11,12 +11,12 @@ import com.intellij.openapi.components.Storage
 import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.ui.ComboBox
-import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.UIUtil
+import io.github.translationshub.idea.listRenderer
 import javax.swing.JComponent
 
 /** Which service "Translate changes" uses and how. API keys are kept in the IDE's password safe, never in this file. */
@@ -70,7 +70,7 @@ class TranslationSettingsConfigurable : Configurable {
     private val settings = TranslationSettings.getInstance()
     private val providers = settings.providers()
     private val provider = ComboBox(providers.toTypedArray()).apply {
-        renderer = SimpleListCellRenderer.create("") { it?.displayName ?: "" }
+        renderer = listRenderer<TranslationProvider> { it?.displayName ?: "" }
     }
     private val sourceLanguage = JBTextField(8)
     private val email = JBTextField(24)

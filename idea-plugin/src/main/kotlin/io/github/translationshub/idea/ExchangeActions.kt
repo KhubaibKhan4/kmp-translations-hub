@@ -58,9 +58,10 @@ object ExchangeActions {
 
     fun export(project: Project, set: TranslationSet) {
         val formats = Format.entries
-        val choice = Messages.showChooseDialog(project, "Export ${set.keys.size} keys in ${set.locales.size} locales as:", "Export Translations",
-            null, formats.map { it.label }.toTypedArray(), formats.first().label)
-        if (choice < 0) return
+        val message = "Export ${set.keys.size} keys in ${set.locales.size} locales as:\n\n" + formats.joinToString("\n") { "• ${it.label}" }
+        val choice = Messages.showDialog(project, message, "Export Translations",
+            arrayOf("CSV", "XLIFF", "strings.xml", "Cancel"), 0, Messages.getQuestionIcon())
+        if (choice !in formats.indices) return
         val folder = FileChooser.chooseFile(FileChooserDescriptorFactory.createSingleFolderDescriptor().withTitle("Export To"), project, null) ?: return
         val files = exportFiles(set, formats[choice])
         WriteAction.run<RuntimeException> {

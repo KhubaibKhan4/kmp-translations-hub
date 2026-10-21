@@ -212,6 +212,10 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
         reload()
     }
 
+    /** The locale of the selected column; null on the Key and Default columns. */
+    private fun selectedLocale(): Locale? =
+        table.selectedColumn.takeIf { it >= 0 }?.let { model.locale(table.convertColumnIndexToModel(it)) }
+
     private fun selectedKey(): ResourceKey? =
         table.selectedRow.takeIf { it >= 0 }?.let { model.key(table.convertRowIndexToModel(it)) }
 
@@ -238,6 +242,10 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
         action("Add Locale", AllIcons.Nodes.PpWeb) {
             val locale = LocaleChooser.choose(project, model.set.locales) ?: return@action
             edit { controller.addLocale(locale) }
+        },
+        action("Run App in Selected Locale", AllIcons.Actions.Execute, enabled = { selectedLocale() != null }) {
+            val locale = selectedLocale() ?: return@action
+            ProLicense.runOrUpsell(project, "Run in this locale") { DeviceHubBridge.runIn(project, locale) }
         },
         action("Translate Changes…", AllIcons.Actions.Lightning) {
             ProLicense.runOrUpsell(project, "Translate changes") {

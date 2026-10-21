@@ -12,7 +12,6 @@ import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.CheckBoxList
-import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
@@ -23,6 +22,7 @@ import io.github.translationshub.core.ResourceKey
 import io.github.translationshub.core.TranslationPlan
 import io.github.translationshub.idea.TranslationsController
 import io.github.translationshub.idea.displayName
+import io.github.translationshub.idea.listRenderer
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -132,7 +132,7 @@ private class TranslateDialog(project: Project, private val controller: Translat
 
     private val settings = TranslationSettings.getInstance()
     private val providerBox = ComboBox(settings.providers().toTypedArray()).apply {
-        renderer = SimpleListCellRenderer.create("") { p -> p?.let { it.displayName + (it.unavailableReason()?.let { r -> "  ($r)" } ?: "") } ?: "" }
+        renderer = listRenderer<TranslationProvider> { p -> p?.let { it.displayName + (it.unavailableReason()?.let { r -> "  ($r)" } ?: "") } ?: "" }
         selectedItem = settings.providers().firstOrNull { it.id == settings.state.provider }
     }
     private val includeReview = JBCheckBox("Also redo translations a person wrote whose default text changed")

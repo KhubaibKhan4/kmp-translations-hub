@@ -28,7 +28,7 @@ class AppleProvider : TranslationProvider {
 
     override fun unavailableReason(): String? = when {
         !SystemInfo.isMac -> "Apple translation runs on macOS only"
-        !SystemInfo.isOsVersionAtLeast("26.0") -> "Apple translation needs macOS 26 or newer"
+        macOsMajor() < 26 -> "Apple translation needs macOS 26 or newer"
         helper() == null -> "The Apple translation helper is missing from this build"
         else -> null
     }
@@ -46,6 +46,8 @@ class AppleProvider : TranslationProvider {
         (json["error"] as? String)?.let { throw ProviderException("Apple: $it") }
         (json["texts"] as? List<*>)?.map { it as? String } ?: throw ProviderException("Apple: no result")
     }
+
+    private fun macOsMajor(): Int = SystemInfo.OS_VERSION.substringBefore('.').toIntOrNull() ?: 0
 
     /** Copies the helper out of the plugin jar once (executables can't run from inside a jar). */
     private fun helper(): File? = helperFile

@@ -12,7 +12,8 @@ Freemium: the table, missing-key and placeholder checks and navigation are free.
 | Module | What it is |
 |---|---|
 | `core` | Dependency-free engine: `values-…` qualifiers, the `strings.xml` model and parser, plural rules per language, checks, and `translations.lock.json`. No IDE APIs, so a CLI or CI check can reuse it. |
-| `idea-plugin` | The **Translations** editor tab, PSI writer (keeps formatting, one Undo per edit), and later inspections, quick fixes and translation providers. |
+| `idea-plugin` | The **Translations** editor tab, PSI writer (keeps formatting, one Undo per edit), inspections and quick fixes, `Res.string` navigation, string extraction (Kotlin plugin, optional), import/export, translation providers, Pro licensing. |
+| `tools/apple-translate` | `translationshub-apple`, the Swift helper for Apple's on-device Translation framework. `./build.sh` rebuilds the universal binary into the plugin's resources (needs Xcode with the macOS 26 SDK). |
 
 ## Build and run
 
@@ -44,6 +45,20 @@ it stores a hash of the source text it was made from, a hash of its own text, an
 A machine translation someone edited by hand counts as `human` from then on. Translations that existed before
 the plugin are adopted as `human` and current, so the first run doesn't re-translate the app.
 
+## Translation services
+
+| Service | Key | Notes |
+|---|---|---|
+| Apple on-device | None | macOS 26+. Offline; nothing leaves the Mac. Download languages first in System Settings → General → Language & Region → Translation Languages. No Urdu. |
+| MyMemory | None | About 5,000 characters a day per IP, ~10× with an optional email. One string per request: fine for a few new strings. |
+| DeepL | Yours | Free plan: 500,000 characters a month (`:fx` keys use the free endpoint). |
+| Google Cloud Translation | Yours | v2 API with an API key. |
+| OpenAI | Yours | Model set in Settings (default `gpt-5-mini`). |
+
+Placeholders (`%1$s`, `%d`), inline markup and escapes are swapped for tokens before sending and put back after; a
+result whose placeholders don't match the default text is dropped, not saved. Every plural form the target language
+needs is sent (from the source's same form, or `other`). Settings → Tools → KMP Translations Hub.
+
 ## Phase 0 results (2026-10-20)
 
 - **Real project** (KhataPay: 8 `composeResources` folders, English + Urdu): all 381 keys read, the same counts as
@@ -54,19 +69,14 @@ the plugin are adopted as `human` and current, so the first run doesn't re-trans
   survive); new keys land after the key they follow in the source; missing plural forms go in CLDR order; inline
   markup and Compose escapes pass through. Several edits are one Undo that restores the file byte for byte, and
   Undo works from the Translations tab too.
-- **Plugin Verifier**: compatible with Android Studio 2026.2, no deprecated or experimental API use.
+- **Plugin Verifier**: compatible with Android Studio 2026.2. One warning remains: the verifier wants
+  `supportsKotlinPluginMode` in the main `plugin.xml`, but the Kotlin plugin is an optional dependency, so it's in
+  `kotlin-features.xml`, which loads in K2 mode (the extraction tests run there).
 
 Found on the way: `XmlTagValue.setEscapedText` drops inline markup, and replacing a tag through the PSI runs the
 formatter over it, so text with markup is written into the document directly.
 
-## Roadmap
+## Status (2026-10-21)
 
-1. **Free MVP**: add/rename/delete keys across locales, add a locale, plural and array editing panel, search and
-   "missing only" filter, `Res.string.x` ↔ XML navigation, inspections.
-2. **Paid core**: per-language plural forms editor, extract hardcoded strings
-   (`Text("Hello")` → `stringResource(Res.string.hello)`), escaping/length/unused/untranslated checks,
-   XLIFF/CSV/Android import and export.
-3. **Translation**: parallel, batched translation of only missing and stale strings, placeholders protected.
-   No key needed: Apple on-device Translation (macOS 26.4+) and MyMemory. Bring your own key: DeepL, Google Cloud,
-   Claude/OpenAI. Device Hub "Run in this locale".
-4. **Launch**: Marketplace listing, screenshots, Freemium pricing.
+Phases 0–3 are built and tested (75 tests). What's left is in [RELEASE.md](RELEASE.md): accounts, the paid-plan
+product code, screenshots and the listing.

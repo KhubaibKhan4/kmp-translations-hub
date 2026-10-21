@@ -4,7 +4,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import io.github.translationshub.core.ArrayValue
@@ -20,8 +19,8 @@ class AddKeyDialog(project: Project, private val isFree: (String, ResourceKind) 
 
     private val nameField = JBTextField(30)
     private val kindBox = ComboBox(ResourceKind.entries.toTypedArray()).apply {
-        renderer = SimpleListCellRenderer.create("") {
-            when (it) {
+        renderer = listRenderer { kind ->
+            when (kind) {
                 ResourceKind.STRING -> "String"
                 ResourceKind.PLURALS -> "Plurals"
                 ResourceKind.ARRAY -> "String array"
