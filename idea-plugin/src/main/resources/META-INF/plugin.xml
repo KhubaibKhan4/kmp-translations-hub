@@ -17,6 +17,7 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.xml</depends>
+    <depends optional="true" config-file="kotlin-features.xml">org.jetbrains.kotlin</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <fileEditorProvider implementation="io.github.translationshub.idea.TranslationsEditorProvider"/>
