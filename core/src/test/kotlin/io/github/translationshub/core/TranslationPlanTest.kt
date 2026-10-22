@@ -11,14 +11,22 @@ class TranslationPlanTest {
         val text = "Hi %1\$s, <b>%2\$d</b> new & \\'fresh\\'\\n"
         for (style in Protection.Style.entries) {
             val p = Protection.protect(text, style)
-            assertEquals(7, p.tokens.size, style.name)
+            // Raw mode leaves the two placeholders in the text: 5 tokens instead of 7.
+            assertEquals(if (style == Protection.Style.RAW_PLACEHOLDERS) 5 else 7, p.tokens.size, style.name)
             // A service that keeps tokens but reorders the words:
             val translated = when (style) {
                 Protection.Style.XML_TAGS -> p.text.replace("Hi", "Hallo").replace("new &amp;", "neu &amp;")
-                Protection.Style.BRACKETS -> p.text.replace("Hi", "Hallo").replace("new &", "neu &")
+                Protection.Style.BRACKETS, Protection.Style.RAW_PLACEHOLDERS -> p.text.replace("Hi", "Hallo").replace("new &", "neu &")
             }
             assertEquals("Hallo %1\$s, <b>%2\$d</b> neu & \\'fresh\\'\\n", Protection.restore(translated, p, style), style.name)
         }
+    }
+
+    @Test
+    fun `raw placeholder mode sends printf placeholders as they are`() {
+        val p = Protection.protect("Hi %1\$s, <b>%2\$d</b> new\\n", Protection.Style.RAW_PLACEHOLDERS)
+        assertEquals("Hi %1\$s, ⟦0⟧%2\$d⟦1⟧ new⟦2⟧", p.text)
+        assertEquals("Hola %1\$s, <b>%2\$d</b> nuevo\\n", Protection.restore("Hola %1\$s, ⟦0⟧%2\$d⟦1⟧ nuevo⟦2⟧", p, Protection.Style.RAW_PLACEHOLDERS))
     }
 
     @Test

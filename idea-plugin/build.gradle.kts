@@ -135,6 +135,8 @@ tasks.named<Test>("test") {
     maxHeapSize = "2g"
     // Pro features are on in a build without a product code; the tests that check the free tier turn them off.
     providers.gradleProperty("translationshub.pro").orNull?.let { systemProperty("translationshub.pro", it) }
+    // -Ptranslationshub.live=true also runs the tests that call real translation services (MyMemory, no key).
+    providers.gradleProperty("translationshub.live").orNull?.let { systemProperty("translationshub.live", it) }
 }
 
 tasks.named<Zip>("buildPlugin") {

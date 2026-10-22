@@ -11,9 +11,18 @@ object Protection {
         /** `<x id="0"/>`: for services with XML/HTML tag handling (DeepL, Google), which keep tags in place. */
         XML_TAGS,
 
-        /** `⟦0⟧`: for plain-text services (MyMemory, Apple), which leave unusual brackets alone. */
+        /** `⟦0⟧`: for plain-text services (Apple), which leave unusual brackets alone. */
         BRACKETS,
+
+        /**
+         * `%1$s` and `%d` sent as they are; only markup and escapes become `⟦0⟧`. For translation memories
+         * (MyMemory) built from software strings: they keep real placeholders but drop or rewrite made-up tokens.
+         * The placeholders are still checked against the default text afterwards.
+         */
+        RAW_PLACEHOLDERS,
     }
+
+    private val placeholder = Regex("""%(?:\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?[sdfxXoeEgGc]""")
 
     data class Protected(val text: String, val tokens: List<String>)
 
@@ -22,6 +31,7 @@ object Protection {
     fun protect(text: String, style: Style): Protected {
         val tokens = mutableListOf<String>()
         val masked = protectedParts.replace(text) { match ->
+            if (style == Style.RAW_PLACEHOLDERS && placeholder.matches(match.value)) return@replace match.value
             tokens += match.value
             token(tokens.size - 1, style)
         }
@@ -34,7 +44,7 @@ object Protection {
     fun restore(translated: String, protected: Protected, style: Style): String? {
         val pattern = when (style) {
             Style.XML_TAGS -> Regex("""<x\s+id\s*=\s*"(\d+)"\s*/>""")
-            Style.BRACKETS -> Regex("""⟦\s*(\d+)\s*⟧""")
+            Style.BRACKETS, Style.RAW_PLACEHOLDERS -> Regex("""⟦\s*(\d+)\s*⟧""")
         }
         val seen = mutableListOf<Int>()
         var restored = pattern.replace(translated) { match ->
@@ -49,7 +59,7 @@ object Protection {
 
     private fun token(index: Int, style: Style) = when (style) {
         Style.XML_TAGS -> "<x id=\"$index\"/>"
-        Style.BRACKETS -> "⟦$index⟧"
+        Style.BRACKETS, Style.RAW_PLACEHOLDERS -> "⟦$index⟧"
     }
 
     private fun escapeOutsideTokens(text: String): String {

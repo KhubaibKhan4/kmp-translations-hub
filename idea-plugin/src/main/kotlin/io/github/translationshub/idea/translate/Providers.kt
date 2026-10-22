@@ -29,6 +29,9 @@ interface TranslationProvider {
     /** How placeholders are hidden from this service; null for language models, which are told to keep them. */
     val protection: Protection.Style?
 
+    /** How to send a string once more when the service lost or changed its placeholders; null for no retry. */
+    val retryProtection: Protection.Style? get() = Protection.Style.RAW_PLACEHOLDERS
+
     /** Strings per request, characters per request, and requests in flight across all locales. */
     val maxBatch: Int
     val maxChars: Int
@@ -161,7 +164,10 @@ class GoogleCloudProvider(private val key: () -> String?) : TranslationProvider 
 class MyMemoryProvider(private val email: () -> String?) : TranslationProvider {
     override val id = "mymemory"
     override val displayName = "MyMemory (free, no key)"
-    override val protection = Protection.Style.BRACKETS
+
+    // A translation memory of software strings: it keeps %1$s but drops or rewrites made-up tokens (tested).
+    override val protection = Protection.Style.RAW_PLACEHOLDERS
+    override val retryProtection = Protection.Style.BRACKETS
     override val maxBatch = 1
     override val maxChars = 500
     override val concurrency = 2

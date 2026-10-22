@@ -120,6 +120,9 @@ object TranslateChanges {
             summary.written.forEach { (locale, n) -> add("${locale.tag}: $n translated") }
             summary.failed.forEach { (locale, keys) -> add("${locale.tag}: ${keys.size} not translated (${keys.values.distinct().take(2).joinToString("; ")})") }
             summary.errors.forEach { (locale, error) -> add("${locale.tag}: $error") }
+            if (summary.failed.isNotEmpty()) {
+                add("Strings that weren't translated stay marked missing, so nothing broken is saved. Run again, or try DeepL, Claude or OpenAI for them.")
+            }
         }
         val type = if (summary.errors.isEmpty() && summary.failed.isEmpty()) NotificationType.INFORMATION else NotificationType.WARNING
         NotificationGroupManager.getInstance().getNotificationGroup("KMP Translations Hub")

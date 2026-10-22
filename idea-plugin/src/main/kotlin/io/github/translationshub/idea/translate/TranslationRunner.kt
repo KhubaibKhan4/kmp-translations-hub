@@ -28,53 +28,66 @@ class TranslationRunner(private val provider: TranslationProvider, private val s
     )
 
     suspend fun run(plan: TranslationPlan, onProgress: (done: Int) -> Unit = {}): Result = coroutineScope {
-        val style = provider.protection
-        val protected = plan.segments.map { segment -> style?.let { Protection.protect(segment.text, it) } }
-        val requests = plan.segments.mapIndexed { i, segment ->
-            TranslationRequest(protected[i]?.text ?: segment.text, segment.context, segment.key.name)
-        }
-        val batches = batches(requests.indices.toList(), requests)
-        val results = arrayOfNulls<String>(requests.size)
-        val reasons = mutableMapOf<ResourceKey, String>()
+        val results = arrayOfNulls<String>(plan.segments.size)
+        val reasons = mutableMapOf<Int, String>()
         var done = 0
         var firstError: ProviderException? = null
 
-        batches.map { batch ->
-            async {
-                val translated = try {
-                    permits.withPermit { provider.translate(batch.map(requests::get), sourceLanguage, plan.locale) }
-                } catch (e: ProviderException) {
-                    synchronized(reasons) {
-                        firstError = firstError ?: e
-                        batch.forEach { reasons[plan.segments[it].key] = e.message ?: "Failed" }
-                    }
-                    return@async
-                }
-                synchronized(reasons) {
-                    batch.forEachIndexed { j, index ->
-                        val segment = plan.segments[index]
-                        val raw = translated.getOrNull(j)
-                        val restored = when {
-                            raw == null -> null
-                            style == null -> raw
-                            else -> Protection.restore(raw, protected[index]!!, style)
-                        }
-                        when {
-                            restored == null -> reasons[segment.key] = if (raw == null) "No translation returned" else "Placeholders were lost"
-                            !placeholdersMatch(segment, restored) -> reasons[segment.key] = "Placeholders don't match the default text"
-                            else -> results[index] = restored
-                        }
-                    }
-                    done += batch.size
-                    onProgress(done)
-                }
+        /** Sends [indices] with [style], filling [results] or [reasons]; failed ones are returned for a retry. */
+        suspend fun pass(indices: List<Int>, style: Protection.Style?, countProgress: Boolean): List<Int> {
+            val protected = indices.associateWith { i -> style?.let { Protection.protect(plan.segments[i].text, it) } }
+            val requests = indices.associateWith { i ->
+                val segment = plan.segments[i]
+                TranslationRequest(protected[i]?.text ?: segment.text, segment.context, segment.key.name)
             }
-        }.awaitAll()
+            val retry = mutableListOf<Int>()
+            batches(indices, requests).map { batch ->
+                async {
+                    val translated = try {
+                        permits.withPermit { provider.translate(batch.map(requests::getValue), sourceLanguage, plan.locale) }
+                    } catch (e: ProviderException) {
+                        synchronized(reasons) {
+                            firstError = firstError ?: e
+                            batch.forEach { reasons[it] = e.message ?: "Failed" }
+                        }
+                        return@async
+                    }
+                    synchronized(reasons) {
+                        batch.forEachIndexed { j, index ->
+                            val segment = plan.segments[index]
+                            val raw = translated.getOrNull(j)
+                            val restored = when {
+                                raw == null -> null
+                                style == null -> raw
+                                else -> Protection.restore(raw, protected.getValue(index)!!, style)
+                            }
+                            when {
+                                raw == null -> reasons[index] = "No translation returned"
+                                restored == null -> { reasons[index] = "${provider.displayName} lost a placeholder"; retry += index }
+                                !placeholdersMatch(segment, restored) -> { reasons[index] = "${provider.displayName} changed a placeholder"; retry += index }
+                                else -> { results[index] = restored; reasons.remove(index) }
+                            }
+                        }
+                        if (countProgress) {
+                            done += batch.size
+                            onProgress(done)
+                        }
+                    }
+                }
+            }.awaitAll()
+            return retry
+        }
+
+        val failed = pass(plan.segments.indices.toList(), provider.protection, countProgress = true)
+        // Services handle placeholders differently: give the ones that came back broken one more try the other way.
+        val retryStyle = provider.retryProtection
+        if (failed.isNotEmpty() && retryStyle != null && retryStyle != provider.protection) pass(failed, retryStyle, countProgress = false)
 
         // Nothing at all came back: surface the service's error (bad key, quota) rather than a list of failed keys.
         if (results.all { it == null } && firstError != null) throw firstError!!
         val values = plan.assemble(results.toList())
-        Result(values, reasons.filterKeys { it !in values })
+        val byKey = reasons.entries.groupBy({ plan.segments[it.key].key }, { it.value }).mapValues { it.value.first() }
+        Result(values, byKey.filterKeys { it !in values })
     }
 
     /** A plural form may drop the number ("One file"), but must not add or change one. */
@@ -84,12 +97,13 @@ class TranslationRunner(private val provider: TranslationProvider, private val s
         return if (segment.part is TranslationPlan.Part.Plural) actual.all { (i, c) -> expected[i] == c } else expected == actual
     }
 
-    private fun batches(indices: List<Int>, requests: List<TranslationRequest>): List<List<Int>> {
+    private fun batches(indices: List<Int>, requests: Map<Int, TranslationRequest>): List<List<Int>> {
         val result = mutableListOf<List<Int>>()
         var current = mutableListOf<Int>()
         var chars = 0
         for (i in indices) {
-            val length = requests[i].text.length + (requests[i].context?.length ?: 0)
+            val request = requests.getValue(i)
+            val length = request.text.length + (request.context?.length ?: 0)
             if (current.isNotEmpty() && (current.size >= provider.maxBatch || chars + length > provider.maxChars)) {
                 result += current
                 current = mutableListOf()

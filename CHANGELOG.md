@@ -12,3 +12,4 @@
 - Pro: extract hardcoded strings in Compose UI code to `composeResources` with Alt+Enter, or all at once with Inspect Code.
 - Pro: import and export CSV, XLIFF 1.2 and Android `strings.xml`.
 - Pro: Run App in Selected Locale, on the device selected in KMP Device Hub.
+- Placeholders survive MyMemory: it's sent `%1$s` as is (its memory keeps real placeholders but dropped stand-in tokens), and any string a service returns with a broken placeholder is retried once the other way before it's reported.

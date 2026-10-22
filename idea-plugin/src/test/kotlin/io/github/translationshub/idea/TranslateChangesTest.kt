@@ -108,9 +108,36 @@ class TranslateChangesTest : BasePlatformTestCase() {
     fun `test a result that loses placeholders is not saved`() {
         val summary = translate(FakeProvider(breakPlaceholdersOf = "hello"))
         assertNull(controller.read().translation(ResourceKey(ResourceKind.STRING, "hello"), de))
-        assertEquals("Placeholders were lost", summary.failed.getValue(de).getValue(ResourceKey(ResourceKind.STRING, "hello")))
+        assertEquals("Fake changed a placeholder", summary.failed.getValue(de).getValue(ResourceKey(ResourceKind.STRING, "hello")))
         // The rest of the locale was still written.
         assertNotNull(controller.read().translation(ResourceKey(ResourceKind.PLURALS, "files"), de))
+    }
+
+    fun `test a string whose tokens get dropped is retried with plain placeholders`() {
+        // Like MyMemory's memory: drops made-up ⟦0⟧ tokens, keeps real %1$s.
+        val memory = object : TranslationProvider by FakeProvider() {
+            override val protection = Protection.Style.BRACKETS
+            override val retryProtection = Protection.Style.RAW_PLACEHOLDERS
+            override suspend fun translate(requests: List<TranslationRequest>, from: String, to: Locale): List<String?> =
+                requests.map { r -> "[${to.tag}] " + r.text.replace(Regex("⟦\\d+⟧"), "") }
+        }
+        val summary = translate(memory, mapOf(de to listOf(ResourceKey(ResourceKind.STRING, "hello"))))
+        assertEquals(mapOf(de to 1), summary.written)
+        assertEquals(TextValue("[de] Hello, %1\$s"), controller.read().translation(ResourceKey(ResourceKind.STRING, "hello"), de)!!.value)
+    }
+
+    fun `test MyMemory live with strings that failed before`() {
+        // Network test, opt-in: -Dtranslationshub.live=true (./gradlew :idea-plugin:test -Ptranslationshub.live=true).
+        if (System.getProperty("translationshub.live") != "true") return
+        val provider = io.github.translationshub.idea.translate.MyMemoryProvider { null }
+        val texts = listOf("Archive %1\$s?", "Remove %1\$s", "Credit limit %1\$s", "%1\$d customers", "Added %1\$d customers. %2\$d skipped.", "It\\'s %1\$s")
+        val plan = io.github.translationshub.core.TranslationPlan(Locale("es"), texts.mapIndexed { i, t ->
+            io.github.translationshub.core.TranslationPlan.Segment(ResourceKey(ResourceKind.STRING, "k$i"), io.github.translationshub.core.TranslationPlan.Part.Whole, t, null)
+        })
+        val result = runBlocking { io.github.translationshub.idea.translate.TranslationRunner(provider, "en").run(plan) }
+        result.values.forEach { (k, v) -> println("LIVE ${k.name}: $v") }
+        result.failed.forEach { (k, why) -> println("LIVE FAILED ${k.name}: $why") }
+        assertEquals(texts.size, result.values.size)
     }
 
     fun `test a service error is reported per locale`() {
