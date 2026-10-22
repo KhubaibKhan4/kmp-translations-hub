@@ -8,23 +8,39 @@
 
 For Kotlin Multiplatform and Compose Multiplatform developers who keep their strings in `composeResources`.
 
+<a href="https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub"><img src="https://img.shields.io/badge/Get%20from-JetBrains%20Marketplace-000000?style=for-the-badge&logo=jetbrains" alt="Get from JetBrains Marketplace" height="36"></a>
+
+[![Version](https://img.shields.io/jetbrains/plugin/v/35376?label=Marketplace&color=7F52FF)](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/35376?color=1E88E5)](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub)
+[![Rating](https://img.shields.io/jetbrains/plugin/r/rating/35376?color=3DDC84)](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews)
 ![Android Studio & IntelliJ IDEA 2025.1+](https://img.shields.io/badge/Android%20Studio%20%26%20IntelliJ-2025.1%2B-7F52FF)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-composeResources-1E88E5)
-![Freemium](https://img.shields.io/badge/plan-Freemium-3DDC84)
+
+<a href="https://youtu.be/OsYgv6vD9V4"><img src="https://img.youtube.com/vi/OsYgv6vD9V4/maxresdefault.jpg" alt="Watch the 90-second demo on YouTube" width="640"></a>
+
+▶ [Watch the 90-second demo](https://youtu.be/OsYgv6vD9V4)
 
 </div>
 
 ## Install
 
-Coming to JetBrains Marketplace. Until then, build the plugin and install it from disk:
+In Android Studio or IntelliJ IDEA (2025.1 or newer): **Settings → Plugins → Marketplace**, search for
+**KMP Translations Hub** and install it, or use the button above:
+[plugins.jetbrains.com/plugin/35376-kmp-translations-hub](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub).
+
+Then open any `composeResources/values…/strings.xml` and switch to the **Translations** tab at the bottom of the editor.
+
+<details>
+<summary>Build it from source instead</summary>
 
 ```bash
 ./gradlew :idea-plugin:buildPlugin
 ```
 
-Then in Android Studio or IntelliJ IDEA (2025.1 or newer): **Settings → Plugins → ⚙ → Install Plugin from Disk…**, pick
-`idea-plugin/build/distributions/kmp-translations-hub-<version>.zip`, and restart. Open any
-`composeResources/values…/strings.xml` and switch to the **Translations** tab at the bottom of the editor.
+**Settings → Plugins → ⚙ → Install Plugin from Disk…**, pick
+`idea-plugin/build/distributions/kmp-translations-hub-<version>.zip`, and restart.
+
+</details>
 
 ## Features
 
@@ -94,6 +110,9 @@ array items are their own entries (`cart_items#few`, `days[2]`), so any tool can
 relaunches your app in that column's language on an Android device or iOS simulator.
 
 ## Free and Pro
+
+**Early access:** every Pro feature is free in the current release, while the paid plan is set up on the
+Marketplace. Ratings and reviews on the [Marketplace page](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews) help a lot.
 
 | Free | Pro (free trial through JetBrains Marketplace) |
 |---|---|

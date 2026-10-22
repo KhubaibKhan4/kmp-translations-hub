@@ -33,6 +33,9 @@ class TranslationSettings : PersistentStateComponent<TranslationSettings.State> 
         var openAiModel: String = "gpt-5-mini"
         var claudeModel: String = ClaudeProvider.DEFAULT_MODEL
         var myMemoryEmail: String = ""
+        /** Successful Translate Changes runs, counted only until the rating prompt has been shown. */
+        var successfulRuns: Int = 0
+        var ratingPromptShown: Boolean = false
     }
 
     private var state = State()

@@ -123,7 +123,10 @@ object TranslateChanges {
                 }
                 ApplicationManager.getApplication().invokeLater({
                     onDone()
-                    if (summary != null) notify(project, provider, summary)
+                    if (summary != null) {
+                        notify(project, provider, summary)
+                        if (RatingPrompt.recordRun(settings.state, summary)) RatingPrompt.show(project)
+                    }
                 }, ModalityState.defaultModalityState())
             }
         }.queue()
