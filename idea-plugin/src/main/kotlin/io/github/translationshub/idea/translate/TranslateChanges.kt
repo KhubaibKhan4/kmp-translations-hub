@@ -131,9 +131,11 @@ object TranslateChanges {
 internal class TranslateDialog(project: Project, private val controller: TranslationsController) : DialogWrapper(project) {
 
     private val settings = TranslationSettings.getInstance()
-    private val providerBox = ComboBox(settings.providers().toTypedArray()).apply {
+    private val providers = settings.providers()
+    private val providerBox = ComboBox(providers.toTypedArray()).apply {
         renderer = listRenderer<TranslationProvider> { p -> p?.let { it.displayName + (it.unavailableReason()?.let { r -> "  ($r)" } ?: "") } ?: "" }
-        selectedItem = settings.providers().firstOrNull { it.id == settings.state.provider }
+        // The same instances as the items: a fresh list's providers would never match the selection.
+        selectedItem = providers.firstOrNull { it.id == settings.state.provider } ?: providers.first()
     }
     private val includeReview = JBCheckBox("Also redo translations a person wrote whose default text changed")
     private val locales = CheckBoxList<Locale>()

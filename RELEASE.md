@@ -19,8 +19,9 @@
 - [ ] The plugin is about 40 MB because of Anthropic's Java SDK (the rest is under 0.5 MB). JetBrains recommends
       obfuscating paid plugins (optional); if you do, keep `com.anthropic`, Jackson and OkHttp out of it.
 
-- [ ] Screenshots: the Translations tab on a real project (KhataPay), the side panel with Polish plurals, Translate
-      Changes with its progress, the inspection in `strings.xml`, Alt+Enter "Extract to composeResources".
+- [x] Screenshots (2560×1600, `docs/screenshots/`) and banner (1920×1080, `docs/banner.png`), rendered from the real
+      panels: `./gradlew :idea-plugin:test --tests '*ListingRender*'`, then `python3 tools/listing/make_listing.py
+      idea-plugin/build/listing docs`. Upload the six screenshots to Marketplace.
 - [ ] A 60–90 s demo video.
 - [ ] `./gradlew build :idea-plugin:verifyPlugin -Ptranslationshub.verifyRecommended=true`
 - [ ] Free early-access build: `./gradlew :idea-plugin:buildPlugin` (no product code: every Pro feature on).

@@ -18,7 +18,7 @@ sealed interface Problem {
         val actual: Map<Int, Char>,
     ) : Problem {
         override val message
-            get() = "Placeholders ${describe(actual)} don't match the source's ${describe(expected)}"
+            get() = "Placeholders ${describe(actual)} don't match the default text's ${describe(expected)}"
 
         private fun describe(signature: Map<Int, Char>) =
             if (signature.isEmpty()) "(none)" else signature.toSortedMap().entries.joinToString(" ") { "%${it.key}\$${it.value}" }
@@ -35,7 +35,7 @@ sealed interface Problem {
 
     /** A string-array has a different number of items than the source's. */
     data class ArraySizeMismatch(override val key: ResourceKey, override val locale: Locale, val expected: Int, val actual: Int) : Problem {
-        override val message get() = "$actual items, the source has $expected"
+        override val message get() = "$actual items, the default has $expected"
     }
 
     /** A backslash escape Compose doesn't turn into a character, so it shows up as written. */
