@@ -74,11 +74,12 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
     val table = JBTable(model)
     val detail = CellDetailPanel({ ProLicense.isLicensed() }) { cell, value -> edit { controller.setValue(cell.key, cell.locale, value) } }
     val search = SearchTextField(false)
-    val filter = ComboBox(Filter.entries.toTypedArray())
+    val filter = ComboBox(Filter.entries.toTypedArray()).apply { renderer = listRenderer<Filter> { it?.label ?: "" } }
     private val sorter = TableRowSorter(model)
     private val summary = JBLabel()
     private val panel = JPanel(BorderLayout())
     private val reloadAlarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, this)
+    val toolbar = ActionManager.getInstance().createActionToolbar("KmpTranslationsHub", DefaultActionGroup(actions()), true)
 
     init {
         table.setDefaultRenderer(Any::class.java, CellRenderer())
@@ -97,7 +98,6 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
         })
         filter.addActionListener { applyFilter() }
 
-        val toolbar = ActionManager.getInstance().createActionToolbar("KmpTranslationsHub", DefaultActionGroup(actions()), true)
         toolbar.targetComponent = table
         val top = JPanel().apply {
             layout = BoxLayout(this, BoxLayout.X_AXIS)

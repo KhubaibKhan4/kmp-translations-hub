@@ -72,4 +72,12 @@ class ExtractStringTest : BasePlatformTestCase() {
         val found = myFixture.doHighlighting().filter { it.description == "Hardcoded text in Compose UI" }.map { myFixture.editor.document.getText(com.intellij.openapi.util.TextRange(it.startOffset, it.endOffset)) }
         assertEquals(listOf("\"Welcome back\"", "\"Your name\""), found)
     }
+
+    fun `test Alt+Enter lists the fix once when the inspection is on`() {
+        myFixture.enableInspections(HardcodedComposeTextInspection())
+        configure("@Composable\nfun A() {\n    Text(\"Save changes\")\n}\n")
+        myFixture.editor.caretModel.moveToOffset(myFixture.editor.document.text.indexOf("Save") + 1)
+        myFixture.doHighlighting()
+        assertEquals(1, myFixture.filterAvailableIntentions("Extract to composeResources").size)
+    }
 }

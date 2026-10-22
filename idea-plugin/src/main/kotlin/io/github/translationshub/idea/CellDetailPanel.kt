@@ -19,6 +19,8 @@ import io.github.translationshub.core.ResourceValue
 import io.github.translationshub.core.TextValue
 import io.github.translationshub.core.TranslationState
 import java.awt.BorderLayout
+import java.awt.Dimension
+import java.awt.Rectangle
 import java.awt.FlowLayout
 import java.awt.event.ActionEvent
 import java.awt.event.InputEvent
@@ -28,6 +30,7 @@ import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.KeyStroke
+import javax.swing.Scrollable
 
 /**
  * Below the table: the selected cell in full, with its comment, source text, problems and an editor that fits the
@@ -38,7 +41,7 @@ class CellDetailPanel(
     /** Pro: a field for every plural form the locale's language uses. Free: the forms the value has, plus `other`. */
     private val perLanguagePlurals: () -> Boolean = { true },
     private val onApply: (Cell, ResourceValue) -> Unit,
-) : JPanel(BorderLayout()) {
+) : JPanel(BorderLayout()), Scrollable {
 
     private var cell: Cell? = null
     private var readValue: () -> ResourceValue? = { null }
@@ -53,6 +56,13 @@ class CellDetailPanel(
     }
 
     val shownCell: Cell? get() = cell
+
+    // Inside a scroll pane: as wide as the column, so long texts wrap and Apply stays in view.
+    override fun getPreferredScrollableViewportSize(): Dimension = preferredSize
+    override fun getScrollableUnitIncrement(visibleRect: Rectangle, orientation: Int, direction: Int) = JBUI.scale(16)
+    override fun getScrollableBlockIncrement(visibleRect: Rectangle, orientation: Int, direction: Int) = visibleRect.height
+    override fun getScrollableTracksViewportWidth() = true
+    override fun getScrollableTracksViewportHeight() = parent?.let { it.height > preferredSize.height } ?: false
 
     fun show(model: TranslationsTableModel, cell: Cell?) {
         this.cell = cell

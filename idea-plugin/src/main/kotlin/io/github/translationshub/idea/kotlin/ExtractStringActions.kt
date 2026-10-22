@@ -1,5 +1,6 @@
 package io.github.translationshub.idea.kotlin
 
+import com.intellij.codeInsight.daemon.HighlightDisplayKey
 import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction
 import com.intellij.codeInspection.LocalInspectionTool
 import com.intellij.codeInspection.LocalQuickFix
@@ -11,6 +12,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.psi.PsiElement
+import com.intellij.profile.codeInspection.InspectionProjectProfileManager
 import com.intellij.psi.PsiElementVisitor
 import io.github.translationshub.idea.KeyNameValidator
 import io.github.translationshub.idea.ProLicense
@@ -26,7 +28,16 @@ class ExtractStringIntention : PsiElementBaseIntentionAction() {
     override fun getText() = familyName
     override fun startInWriteAction() = false
 
-    override fun isAvailable(project: Project, editor: Editor?, element: PsiElement) = ExtractString.candidate(element) != null
+    override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean {
+        val candidate = ExtractString.candidate(element) ?: return false
+        // Where the inspection already offers the same fix, Alt+Enter would list it twice.
+        return !(ExtractString.isComposeCallArgument(candidate.literal) && inspectionEnabled(project, element))
+    }
+
+    private fun inspectionEnabled(project: Project, element: PsiElement): Boolean {
+        val key = HighlightDisplayKey.find(HardcodedComposeTextInspection.SHORT_NAME) ?: return false
+        return InspectionProjectProfileManager.getInstance(project).currentProfile.isToolEnabled(key, element)
+    }
 
     override fun invoke(project: Project, editor: Editor?, element: PsiElement) {
         val candidate = ExtractString.candidate(element) ?: return
@@ -47,6 +58,10 @@ class ExtractStringIntention : PsiElementBaseIntentionAction() {
  * Code → Inspect Code to extract every hardcoded string at once; keys are named from the text.
  */
 class HardcodedComposeTextInspection : LocalInspectionTool() {
+
+    companion object {
+        const val SHORT_NAME = "HardcodedComposeText"
+    }
 
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor = object : KtVisitorVoid() {
         override fun visitStringTemplateExpression(expression: KtStringTemplateExpression) {

@@ -128,7 +128,7 @@ object TranslateChanges {
     }
 }
 
-private class TranslateDialog(project: Project, private val controller: TranslationsController) : DialogWrapper(project) {
+internal class TranslateDialog(project: Project, private val controller: TranslationsController) : DialogWrapper(project) {
 
     private val settings = TranslationSettings.getInstance()
     private val providerBox = ComboBox(settings.providers().toTypedArray()).apply {
@@ -167,6 +167,9 @@ private class TranslateDialog(project: Project, private val controller: Translat
     }
 
     fun selectedWork(): Map<Locale, List<ResourceKey>> = work.filterKeys { locales.isItemSelected(it) }
+
+    /** The form alone, for the listing renders (a headless dialog has no window to render). */
+    internal fun form(): JComponent = createCenterPanel()
 
     override fun createCenterPanel(): JComponent = FormBuilder.createFormBuilder()
         .addLabeledComponent("Translate with:", providerBox)
