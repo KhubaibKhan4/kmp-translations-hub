@@ -6,7 +6,6 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.Task
-import com.intellij.openapi.progress.runBlockingCancellable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.DialogWrapper
@@ -23,9 +22,12 @@ import io.github.translationshub.core.TranslationPlan
 import io.github.translationshub.idea.TranslationsController
 import io.github.translationshub.idea.displayName
 import io.github.translationshub.idea.listRenderer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import javax.swing.JComponent
 
 /**
@@ -100,17 +102,29 @@ object TranslateChanges {
         object : Task.Backgroundable(project, "Translating with ${provider.displayName}", true) {
             override fun run(indicator: ProgressIndicator) {
                 indicator.isIndeterminate = false
-                val summary = runBlockingCancellable {
-                    run(controller, provider, settings.state.sourceLanguage, work, apply = { locale, values ->
-                        ApplicationManager.getApplication().invokeAndWait({
-                            if (!project.isDisposed) controller.applyTranslations(locale, values, provider.id)
-                        }, ModalityState.defaultModalityState())
-                    }) { done, total ->
-                        indicator.fraction = if (total == 0) 1.0 else done.toDouble() / total
-                        indicator.text2 = "$done of $total strings"
+                // Plain runBlocking, watching Cancel itself: runBlockingCancellable is experimental API in 2025.1.
+                val summary = runBlocking {
+                    val job = async(Dispatchers.Default) {
+                        run(controller, provider, settings.state.sourceLanguage, work, apply = { locale, values ->
+                            ApplicationManager.getApplication().invokeAndWait({
+                                if (!project.isDisposed) controller.applyTranslations(locale, values, provider.id)
+                            }, ModalityState.defaultModalityState())
+                        }) { done, total ->
+                            indicator.fraction = if (total == 0) 1.0 else done.toDouble() / total
+                            indicator.text2 = "$done of $total strings"
+                        }
                     }
+                    while (job.isActive) {
+                        if (indicator.isCanceled) job.cancel()
+                        delay(100)
+                    }
+                    // Cancelled: locales that finished are already written; the rest stop.
+                    if (job.isCancelled) null else job.await()
                 }
-                ApplicationManager.getApplication().invokeLater({ onDone(); notify(project, provider, summary) }, ModalityState.defaultModalityState())
+                ApplicationManager.getApplication().invokeLater({
+                    onDone()
+                    if (summary != null) notify(project, provider, summary)
+                }, ModalityState.defaultModalityState())
             }
         }.queue()
     }

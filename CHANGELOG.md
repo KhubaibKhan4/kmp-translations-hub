@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
+
+- Works in IntelliJ IDEA and Android Studio 2025.1: "Start Free Trial" and "Run App in Selected Locale" no longer fail there with a missing-method error.
+- Translate Changes and Add Locales no longer use APIs that 2025.1 marks experimental or newer IDEs deprecate.
+- Settings say next to MyMemory that it keeps the text it's sent, so you can pick Apple or your own key for confidential strings.
+
+## 0.1.0
 
 - A Translations tab on every `composeResources/values…` XML file: all keys of the module against all locales, with search and filters for missing, problem and outdated translations.
 - Edit strings in the table, and plurals (only the forms each language uses) and string-arrays in the side panel. Edits keep your files' formatting and comments; each is one Undo, from the tab too.

@@ -11,7 +11,7 @@ import com.intellij.ui.SearchTextField
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.components.labels.LinkLabel
+import com.intellij.ui.components.ActionLink
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -138,9 +138,9 @@ internal class AddLocalesDialog(project: Project, private val existing: List<Loc
 
     override fun createCenterPanel(): JComponent {
         val links = JPanel(FlowLayout(FlowLayout.LEFT, 0, 0)).apply {
-            add(LinkLabel.create("Select the top 10") { tick(LocaleChooser.TOP) })
+            add(ActionLink("Select the top 10") { tick(LocaleChooser.TOP) })
             add(JBLabel("   "))
-            add(LinkLabel.create("Clear") { checked.clear(); refill() })
+            add(ActionLink("Clear") { checked.clear(); refill() })
         }
         return FormBuilder.createFormBuilder()
             .addComponent(search)

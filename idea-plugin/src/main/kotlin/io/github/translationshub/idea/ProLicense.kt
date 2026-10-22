@@ -6,7 +6,6 @@ import com.intellij.openapi.actionSystem.ActionUiKind
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.Presentation
-import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -109,7 +108,7 @@ object ProLicense {
                 else -> null
             }
         }
-        ActionUtil.performAction(register, AnActionEvent.createEvent(context, Presentation(), "", ActionUiKind.NONE, null))
+        performAction(register, AnActionEvent.createEvent(context, Presentation(), "", ActionUiKind.NONE, null))
         cached = null
     }
 

@@ -114,6 +114,11 @@ intellijPlatform {
         ides {
             if (localIde != null) local(localIde)
             if (providers.gradleProperty("translationshub.verifyRecommended").orNull == "true") recommended()
+            // e.g. -Ptranslationshub.verifyIdes=IU:2025.1.7.2,IC:2025.2.6 to reproduce a Marketplace verification report.
+            providers.gradleProperty("translationshub.verifyIdes").orNull?.split(',')?.filter { it.isNotBlank() }?.forEach {
+                val (type, version) = it.trim().split(':')
+                create(type, version)
+            }
         }
     }
 }

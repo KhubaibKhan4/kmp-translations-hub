@@ -7,7 +7,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.Presentation
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.actionSystem.DataKey
-import com.intellij.openapi.actionSystem.ex.ActionUtil
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
@@ -35,6 +34,6 @@ object DeviceHubBridge {
             return
         }
         val context = SimpleDataContext.builder().add(CommonDataKeys.PROJECT, project).add(LOCALE, locale.tag).build()
-        ActionUtil.performAction(action, AnActionEvent.createEvent(context, Presentation(), "KmpTranslationsHub", ActionUiKind.NONE, null))
+        performAction(action, AnActionEvent.createEvent(context, Presentation(), "KmpTranslationsHub", ActionUiKind.NONE, null))
     }
 }
