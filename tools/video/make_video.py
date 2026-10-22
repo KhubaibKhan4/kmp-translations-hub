@@ -456,6 +456,12 @@ def render_frame(job):
     return index
 
 
+def installed_voices():
+    """Voice names macOS has, e.g. "Samantha", "Ava (Premium)"; `say` falls back silently for any other."""
+    out = subprocess.run(["say", "-v", "?"], capture_output=True, text=True, check=True).stdout
+    return {line.split("  ")[0].strip() for line in out.splitlines() if line.strip()}
+
+
 def say(text, voice, rate, path: Path):
     cmd = ["say", "-r", str(rate), "-o", str(path)]
     if voice:
@@ -483,6 +489,14 @@ def main():
     ap.add_argument("--only", help="render just this scene, for checking")
     args = ap.parse_args()
 
+    voices = installed_voices()
+    if args.voice not in voices:
+        english = sorted(v for v in voices if any(tag in v for tag in ("Premium", "Enhanced", "Siri")))
+        raise SystemExit(
+            f"Voice {args.voice!r} isn't installed, and `say` would quietly use the default voice instead.\n"
+            "Download it in System Settings → Accessibility → Spoken Content → System voice → Manage Voices…\n"
+            f"Natural voices installed now: {', '.join(english) or 'none'}"
+        )
     out = Path(args.out); out.mkdir(parents=True, exist_ok=True)
     work = out / "work"
     if work.exists():
