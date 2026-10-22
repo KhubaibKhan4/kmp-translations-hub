@@ -123,8 +123,10 @@ first run doesn't re-translate the app. Projects that never machine-translate ge
 
 ## Privacy
 
-Strings go only to the translation service you pick, with their key names and XML comments as context. Apple
-translation stays on the Mac. API keys stay in the IDE's password safe. The plugin sends nothing anywhere else.
+No analytics or telemetry, and no servers of its own. Strings go only to the translation service you pick, when you
+run Translate Changes; Apple translation stays on the Mac, and API keys stay in the IDE's password safe. MyMemory's
+terms say it keeps the text it's sent, so use Apple or your own key for confidential strings. The full policy, with
+what each service receives: [PRIVACY.md](PRIVACY.md).
 
 ## Development
 

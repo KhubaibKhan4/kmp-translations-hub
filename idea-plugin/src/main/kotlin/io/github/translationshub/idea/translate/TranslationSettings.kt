@@ -92,7 +92,7 @@ class TranslationSettingsConfigurable : Configurable {
             .addLabeledComponent("Language of the default values folder:", sourceLanguage)
             .addSeparator()
             .addLabeledComponent("MyMemory email (optional):", email)
-            .addComponentToRightColumn(hint("Raises MyMemory's free limit about tenfold. Sent to MyMemory only."))
+            .addComponentToRightColumn(hint("Raises MyMemory's free limit about tenfold. Sent to MyMemory only. MyMemory keeps the text it's sent: use Apple or your own key for confidential strings."))
             .addLabeledComponent("DeepL API key:", keys.getValue("deepl"))
             .addComponentToRightColumn(hint("DeepL API Free includes 500,000 characters a month."))
             .addLabeledComponent("Google Cloud API key:", keys.getValue("google"))

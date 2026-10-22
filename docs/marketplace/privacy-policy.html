@@ -1,0 +1,38 @@
+<h2>Privacy Policy: KMP Translations Hub</h2>
+<p><i>Effective October 22, 2026.</i></p>
+<p>This policy covers the <b>KMP Translations Hub</b> plugin for JetBrains IDEs, published by Khubaib Khan.</p>
+<h3>Summary</h3>
+<p>KMP Translations Hub does <b>not</b> collect, sell or share any personal data, and has no analytics, telemetry, crash reporting or advertising. The plugin has no servers of its own. It connects to the internet in one case only: when you run <b>Translate Changes</b> with an online translation service, it sends the strings being translated to <b>the service you chose</b>, and nowhere else.</p>
+<h3>What the plugin does on your computer</h3>
+<ul>
+  <li><b>Your project's strings.</b> The plugin reads and edits the <code>composeResources/values…</code> XML files of the project you open, and reads its Kotlin files to find <code>Res.string…</code> uses (for navigation and the unused-key check). Nothing is uploaded, except as described under Translation services.</li>
+  <li><b><code>translations.lock.json</code>.</b> When strings are first machine translated, the plugin writes this file next to the <code>composeResources</code> folder. It holds short hashes of texts (not the texts themselves), and which service or "human" wrote each translation. It stays in your project; you decide whether to commit it.</li>
+  <li><b>Settings.</b> Your chosen service, the language of the default values folder, the Claude and OpenAI model names and the optional MyMemory email are stored in the IDE's settings on your computer (<code>kmp-translations-hub.xml</code>).</li>
+  <li><b>API keys.</b> DeepL, Google Cloud, Anthropic and OpenAI keys are stored in the IDE's password safe (on macOS the Keychain by default, or KeePass, as set in the IDE), never in a settings or project file.</li>
+  <li><b>Apple translation helper.</b> On macOS the plugin copies its small <code>translationshub-apple</code> program into the IDE's system folder and runs it to use Apple's on-device Translation framework.</li>
+  <li><b>Files you create.</b> Imports read, and exports write, only the files and folders you pick.</li>
+</ul>
+<h3>Translation services</h3>
+<p>Strings are sent only when you start <b>Translate Changes</b>, only for the locales and strings it lists (missing or outdated ones), and only to the one service selected in the dialog. Before sending, placeholders such as <code>%1$s</code>, inline markup and escapes may be replaced by neutral tokens; they're restored when the translation comes back.</p>
+<table>
+  <tr><th>Service</th><th>What is sent</th><th>Where</th><th>Its terms</th></tr>
+  <tr><td>Apple on-device (macOS)</td><td>Nothing leaves your Mac: Apple's Translation framework translates with languages already downloaded.</td><td>Your Mac</td><td><a href="https://www.apple.com/legal/privacy/">Apple Privacy Policy</a></td></tr>
+  <tr><td>MyMemory (no key)</td><td>The text of each string, the language pair, and your email if you entered one in Settings. These are sent in the request address.</td><td><code>api.mymemory.translated.net</code></td><td><a href="https://mymemory.translated.net/terms-and-conditions">MyMemory terms</a></td></tr>
+  <tr><td>DeepL (your key)</td><td>The strings' text, the language pair, and the strings' XML comments as context.</td><td><code>api-free.deepl.com</code> or <code>api.deepl.com</code></td><td><a href="https://www.deepl.com/privacy">DeepL Privacy Policy</a></td></tr>
+  <tr><td>Google Cloud Translation (your key)</td><td>The strings' text and the language pair.</td><td><code>translation.googleapis.com</code></td><td><a href="https://cloud.google.com/terms/cloud-privacy-notice">Google Cloud Privacy Notice</a></td></tr>
+  <tr><td>Claude (your key)</td><td>The strings' text, their key names and XML comments as context, and the language pair.</td><td><code>api.anthropic.com</code></td><td><a href="https://www.anthropic.com/legal/privacy">Anthropic Privacy Policy</a></td></tr>
+  <tr><td>OpenAI (your key)</td><td>The strings' text, their key names and XML comments as context, and the language pair.</td><td><code>api.openai.com</code></td><td><a href="https://openai.com/policies/privacy-policy/">OpenAI Privacy Policy</a></td></tr>
+</table>
+<p>Each service handles what it receives under its own terms, and with your own key, under your agreement with it. In particular, <b>MyMemory's terms say it stores submitted text long term and uses it to improve its services</b>, so don't send strings you consider confidential (unreleased product names, for example) through MyMemory; Apple on-device translation keeps them on your Mac. The plugin never sends your API keys anywhere except to the service they belong to.</p>
+<h3>KMP Device Hub</h3>
+<p>"Run App in Selected Locale" passes the locale's language tag (for example <code>de</code>) to the KMP Device Hub plugin, if you have it installed, on your computer. KMP Device Hub's own policy covers what it does with your devices.</p>
+<h3>Licensing and purchases</h3>
+<p>If you start a trial or buy a Pro license, JetBrains handles it through JetBrains Marketplace and your JetBrains Account, under <a href="https://www.jetbrains.com/legal/docs/privacy/privacy/">JetBrains' privacy policy</a>. The plugin only asks the IDE whether a license is present and checks JetBrains' signature on it locally. It never sees your payment or account details.</p>
+<h3>Third parties</h3>
+<p>Apart from the translation service you choose, the plugin sends nothing to third parties. "Start Free Trial" and "Get KMP Device Hub" open JetBrains' website in your browser.</p>
+<h3>Children</h3>
+<p>The plugin is a developer tool and isn't directed at children.</p>
+<h3>Changes</h3>
+<p>If this policy changes, the new version will be published with the plugin and on its JetBrains Marketplace page, with a new effective date.</p>
+<h3>Contact</h3>
+<p>Questions about this policy: contact the vendor (Khubaib Khan) through the plugin's JetBrains Marketplace page.</p>

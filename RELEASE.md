@@ -50,5 +50,9 @@ that only sends what changed.
 placeholder checks and navigation; so does our free tier. Ours adds plural forms per language, translation that
 only sends what changed, string extraction, import/export and Device Hub.
 
+**Privacy policy:** paste `docs/marketplace/privacy-policy.html` (made from `PRIVACY.md` with
+`python3 tools/listing/privacy_html.py PRIVACY.md docs/marketplace/privacy-policy.html`) into the listing's privacy
+policy field.
+
 **Privacy note for the listing:** strings are sent only to the translation service the user picks, with their key
 names and XML comments as context; Apple translation stays on the Mac; API keys stay in the IDE's password safe.
