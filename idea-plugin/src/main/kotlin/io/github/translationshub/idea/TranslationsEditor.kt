@@ -239,9 +239,9 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
                 "Delete Key", Messages.getQuestionIcon())
             if (answer == Messages.YES) edit { controller.deleteKey(key) }
         },
-        action("Add Locale", AllIcons.Nodes.PpWeb) {
-            val locale = LocaleChooser.choose(project, model.set.locales) ?: return@action
-            edit { controller.addLocale(locale) }
+        action("Add Locales…", AllIcons.Nodes.PpWeb) {
+            val locales = LocaleChooser.chooseMany(project, model.set.locales) ?: return@action
+            edit { controller.addLocales(locales) }
         },
         action("Run App in Selected Locale", AllIcons.Actions.Execute, enabled = { selectedLocale() != null }) {
             val locale = selectedLocale() ?: return@action

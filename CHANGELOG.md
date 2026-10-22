@@ -4,7 +4,7 @@
 
 - A Translations tab on every `composeResources/values…` XML file: all keys of the module against all locales, with search and filters for missing, problem and outdated translations.
 - Edit strings in the table, and plurals (only the forms each language uses) and string-arrays in the side panel. Edits keep your files' formatting and comments; each is one Undo, from the tab too.
-- Add, rename and delete keys in every locale at once, and add a locale.
+- Add, rename and delete keys in every locale at once. Add Locales takes any number at once: tick them in a searchable list (or "Select the top 10"), or type tags such as `sr-Latn, es-MX`; one Undo removes them all.
 - Checks for missing translations, placeholders that don't match the default text, plural forms a language needs, array sizes and keys left behind, in the tab and as warnings in the XML editor, with quick fixes.
 - ⌘/Ctrl+click `Res.string.x` in Kotlin to jump to its XML; a gutter icon on each key finds the code that uses it.
 - Pro: Translate Changes sends only missing and outdated strings (tracked in `translations.lock.json`), all locales at once, with placeholders, markup and escapes protected. Apple on-device translation (macOS 26+) and MyMemory need no key; DeepL, Google Cloud, Claude and OpenAI use your own key, kept in the IDE's password safe.

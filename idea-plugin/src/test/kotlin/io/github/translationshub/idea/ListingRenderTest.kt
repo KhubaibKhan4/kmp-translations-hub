@@ -263,6 +263,12 @@ class ListingRenderTest : BasePlatformTestCase() {
 
         render(TranslationSettingsConfigurable().createComponent(), 880, 560, "settings$suffix")
 
+        val addLocales = AddLocalesDialog(project, editor.model.set.locales)
+        Disposer.register(testRootDisposable, addLocales.disposable)
+        addLocales.tick(LocaleChooser.TOP)
+        addLocales.setOtherTags("sr-Latn, es-MX")
+        render(addLocales.form().apply { border = com.intellij.util.ui.JBUI.Borders.empty(16) }, 520, 520, "add-locales$suffix")
+
         // The XML warnings in a locale file.
         myFixture.enableInspections(TranslationsInspection())
         myFixture.configureFromExistingVirtualFile(source.parent.parent.findChild("values-de")!!.findChild("strings.xml")!!)

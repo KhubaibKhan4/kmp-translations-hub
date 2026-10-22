@@ -16,7 +16,9 @@ import com.intellij.ui.components.JBPasswordField
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.UIUtil
+import io.github.translationshub.idea.keepWidth
 import io.github.translationshub.idea.listRenderer
+import io.github.translationshub.idea.wrapped
 import javax.swing.JComponent
 
 /** Which service "Translate changes" uses and how. API keys are kept in the IDE's password safe, never in this file. */
@@ -74,11 +76,11 @@ class TranslationSettingsConfigurable : Configurable {
     private val provider = ComboBox(providers.toTypedArray()).apply {
         renderer = listRenderer<TranslationProvider> { it?.displayName ?: "" }
     }
-    private val sourceLanguage = JBTextField(8)
-    private val email = JBTextField(24)
-    private val openAiModel = JBTextField(24)
-    private val claudeModel = JBTextField(24)
-    private val keys = listOf("deepl", "google", "claude", "openai").associateWith { JBPasswordField().apply { columns = 32 } }
+    private val sourceLanguage = JBTextField(8).keepWidth()
+    private val email = JBTextField(24).keepWidth()
+    private val openAiModel = JBTextField(24).keepWidth()
+    private val claudeModel = JBTextField(24).keepWidth()
+    private val keys = listOf("deepl", "google", "claude", "openai").associateWith { JBPasswordField().apply { columns = 32 }.keepWidth() }
 
     override fun getDisplayName() = "KMP Translations Hub"
 
@@ -103,7 +105,7 @@ class TranslationSettingsConfigurable : Configurable {
             .panel
     }
 
-    private fun hint(text: String) = JBLabel("<html>$text</html>").apply { foreground = UIUtil.getContextHelpForeground() }
+    private fun hint(text: String) = JBLabel(wrapped(text)).apply { foreground = UIUtil.getContextHelpForeground() }
 
     override fun isModified(): Boolean {
         val s = settings.state

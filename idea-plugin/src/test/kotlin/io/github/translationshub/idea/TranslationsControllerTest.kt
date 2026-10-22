@@ -79,6 +79,16 @@ class TranslationsControllerTest : BasePlatformTestCase() {
         assertTrue(text("values-pt-rBR").contains("<string name=\"hello\">Olá</string>"))
     }
 
+    fun `test several locales are added at once`() {
+        val files = controller.addLocales(listOf(Locale("fr"), Locale("pt", region = "BR"), Locale("sr", script = "Latn"), Locale("fr")))
+        assertEquals(listOf("values-fr", "values-pt-rBR", "values-b+sr+Latn"), files.map { it.parent.name })
+        assertEquals(listOf(de, Locale("fr"), Locale("pt", region = "BR"), Locale("sr", script = "Latn")), controller.read().locales)
+        val error = runCatching { controller.addLocales(listOf(Locale("it"), de)) }.exceptionOrNull()
+        assertEquals("de already exists", error?.message)
+        // Refused before anything was written: no half-added batch.
+        assertFalse(Locale("it") in controller.read().locales)
+    }
+
     fun `test person edits don't create a lock file, machine translations do and are tracked`() {
         controller.setValue(hello, de, TextValue("Servus"))
         assertNull(LockFiles.find(root))

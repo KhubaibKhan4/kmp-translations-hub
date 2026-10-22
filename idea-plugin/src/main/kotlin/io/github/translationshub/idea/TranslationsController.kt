@@ -98,18 +98,26 @@ class TranslationsController(private val project: Project, val root: VirtualFile
     }
 
     /** Creates `values-<locale>/` with an empty file named like the default one (usually `strings.xml`). */
-    fun addLocale(locale: Locale): VirtualFile {
+    fun addLocale(locale: Locale): VirtualFile = addLocales(listOf(locale)).single()
+
+    /** Creates several locales in one command, so one Undo removes them all. Returns the new files, in order. */
+    fun addLocales(locales: List<Locale>): List<VirtualFile> {
         val set = read()
-        require(locale !in set.locales) { "${locale.tag} already exists" }
+        val distinct = locales.distinct()
+        require(distinct.isNotEmpty()) { "No locales to add" }
+        distinct.firstOrNull { it in set.locales }?.let { throw IllegalArgumentException("${it.tag} already exists") }
         val fileName = set.sourceFiles.firstOrNull()?.fileName ?: "strings.xml"
-        lateinit var created: VirtualFile
-        command("Add locale ${locale.tag}", emptyList()) {
-            val folderName = FolderQualifiers(locale).folderName
-            val folder = root.findChild(folderName) ?: root.createChildDirectory(this, folderName)
-            created = folder.findChild(fileName) ?: folder.createChildData(this, fileName).also {
-                val document = requireNotNull(FileDocumentManager.getInstance().getDocument(it))
-                document.setText("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n</resources>\n")
-                PsiDocumentManager.getInstance(project).commitDocument(document)
+        val created = mutableListOf<VirtualFile>()
+        val name = if (distinct.size == 1) "Add locale ${distinct.single().tag}" else "Add ${distinct.size} locales"
+        command(name, emptyList()) {
+            for (locale in distinct) {
+                val folderName = FolderQualifiers(locale).folderName
+                val folder = root.findChild(folderName) ?: root.createChildDirectory(this, folderName)
+                created += folder.findChild(fileName) ?: folder.createChildData(this, fileName).also {
+                    val document = requireNotNull(FileDocumentManager.getInstance().getDocument(it))
+                    document.setText("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n</resources>\n")
+                    PsiDocumentManager.getInstance(project).commitDocument(document)
+                }
             }
         }
         return created

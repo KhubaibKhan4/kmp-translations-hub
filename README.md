@@ -33,7 +33,8 @@ Then in Android Studio or IntelliJ IDEA (2025.1 or newer): **Settings → Plugin
 The **Translations** tab shows every key of the module against every locale: strings, plurals and string-arrays.
 Missing translations and problems are marked in place; search, or filter to missing, problem or outdated keys. Edit a
 cell and only that tag changes in the XML: comments, order and formatting stay as they were, and each edit is one Undo,
-from the tab or the file. Add, rename and delete keys in every locale at once, or add a locale.
+from the tab or the file. Add, rename and delete keys in every locale at once, and add any number of locales in one go: tick them, pick the
+top 10, or type tags such as `sr-Latn, es-MX`.
 
 <img src="docs/screenshots/01-translations-table.png" alt="The Translations tab: keys against locales, missing cells, a placeholder problem in the side panel" width="900">
 
