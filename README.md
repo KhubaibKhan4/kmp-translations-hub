@@ -133,14 +133,15 @@ what each service receives: [PRIVACY.md](PRIVACY.md).
 | Module | What it is |
 |---|---|
 | `core` | Dependency-free engine: `values-…` qualifiers, the `strings.xml` model and parser, plural rules per language, checks, `translations.lock.json`, import/export formats and translation plans. No IDE APIs, so a CLI or CI check can reuse it. |
-| `idea-plugin` | The Translations tab, PSI writer (keeps formatting, one Undo per edit), inspections and quick fixes, `Res.string` navigation, string extraction (Kotlin plugin, optional), translation services, Pro licensing. |
+| `idea-plugin` | The Translations tab, PSI writer (keeps formatting, one Undo per edit), inspections and quick fixes, `Res.string` navigation, string extraction (Kotlin PSI), translation services, Pro licensing. |
 | `tools/apple-translate` | `translationshub-apple`, the Swift helper for Apple's Translation framework. `./build.sh` rebuilds the universal binary into the plugin's resources (needs Xcode with the macOS 26 SDK). |
 | `tools/listing` | The README and Marketplace images. See below. |
 
 ```bash
 ./gradlew test                       # core + IDE tests
 ./gradlew :idea-plugin:runIde -Ptranslationshub.openProject=/path/to/cmp/project
-./gradlew :idea-plugin:verifyPlugin  # against the IDE in local.properties
+./gradlew :idea-plugin:verifyPluginStructure :idea-plugin:verifyPlugin  # plugin.xml, then the IDE in local.properties
+./gradlew :idea-plugin:verifyPlugin -Ptranslationshub.verifyIdes=IU:2025.1.7.2,IU:2025.2.6.3,IU:2025.3.6.1  # like Marketplace
 ```
 
 Set the IDE to build against in the git-ignored `local.properties`:

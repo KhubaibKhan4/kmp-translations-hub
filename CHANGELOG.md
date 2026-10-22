@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Compatible with every supported IDE, 2025.1 to 2026.3, with no compatibility warnings: the plugin now declares Kotlin K2 mode support where the Plugin Verifier expects it, and depends on the bundled Kotlin plugin.
+
 ## 0.1.1
 
 - Works in IntelliJ IDEA and Android Studio 2025.1: "Start Free Trial" and "Run App in Selected Locale" no longer fail there with a missing-method error.

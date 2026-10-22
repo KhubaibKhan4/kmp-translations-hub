@@ -50,7 +50,7 @@ dependencies {
 
     intellijPlatform {
         if (localIde != null) local(localIde) else intellijIdea(providers.gradleProperty("translationshub.ciPlatformVersion").get())
-        // Optional at runtime (kotlin-features.xml): extracting hardcoded strings needs the Kotlin PSI.
+        // Required (bundled in every supported IDE): extracting hardcoded strings needs the Kotlin PSI.
         bundledPlugin("org.jetbrains.kotlin")
         testFramework(TestFrameworkType.Platform)
         pluginVerifier()
