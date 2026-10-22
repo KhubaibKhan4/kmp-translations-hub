@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- No deprecated API in IntelliJ IDEA 2026.3: "Open in the Translations tab" opens the file the way every supported version supports.
+
 ## 0.1.2
 
 - Compatible with every supported IDE, 2025.1 to 2026.3, with no compatibility warnings: the plugin now declares Kotlin K2 mode support where the Plugin Verifier expects it, and depends on the bundled Kotlin plugin.

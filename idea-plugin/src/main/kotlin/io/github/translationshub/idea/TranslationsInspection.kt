@@ -6,6 +6,7 @@ import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiElementVisitor
@@ -101,7 +102,8 @@ class TranslationsInspection : LocalInspectionTool() {
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
             val file = descriptor.psiElement.containingFile?.virtualFile ?: return
             val manager = FileEditorManager.getInstance(project)
-            manager.openFile(file, true)
+            // 2026.3 deprecates every blocking FileEditorManager.openFile; a descriptor opens it on every version.
+            OpenFileDescriptor(project, file).navigate(true)
             (manager as? FileEditorManagerEx)?.setSelectedEditor(file, TranslationsEditorProvider.TYPE_ID)
             manager.getEditors(file).filterIsInstance<TranslationsEditor>().firstOrNull()?.select(Cell(key, locale))
         }
