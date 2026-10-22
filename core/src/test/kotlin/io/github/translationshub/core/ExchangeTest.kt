@@ -32,6 +32,34 @@ class ExchangeTest {
     )
 
     @Test
+    fun `android-quoted strings are read in the form compose shows`() {
+        assertEquals("Start", Exchange.unquote("\"Start\""))
+        assertEquals("Estás \\'offline\\'", Exchange.unquote("\"Estás 'offline'\""))
+        assertEquals("Say \\\"hi\\\"", Exchange.unquote("\"Say \\\"hi\\\"\""))
+        assertEquals("Already \\'escaped\\'", Exchange.unquote("\"Already \\'escaped\\'\""))
+        assertEquals("not \"quoted", Exchange.unquote("not \"quoted"))
+        assertEquals("ends with \\\"", Exchange.unquote("ends with \\\""))
+        val xml = "<resources><string name=\"hello\">\"Hallo, %1\$s\"</string>" +
+            "<plurals name=\"files\"><item quantity=\"one\">\"Eine Datei\"</item></plurals>" +
+            "<string name=\"days[0]\">\"Mo\"</string></resources>"
+        val values = Exchange.fromStringsXml(xml, set, de).values
+        assertEquals(TextValue("Hallo, %1\$s"), values[ResourceKey(ResourceKind.STRING, "hello")])
+        assertEquals("Eine Datei", (values[ResourceKey(ResourceKind.PLURALS, "files")] as PluralsValue).items[PluralCategory.ONE])
+        assertEquals("Mo", (values[ResourceKey(ResourceKind.ARRAY, "days")] as ArrayValue).items[0])
+    }
+
+    @Test
+    fun `arrays written as one string per item read back as the array`() {
+        val xml = Exchange.toStringsXml(set, de, arraysAsStrings = true)
+        assertTrue("<string name=\"days[1]\">Di</string>" in xml)
+        assertTrue("string-array" !in xml)
+        val back = Exchange.fromStringsXml(xml.replace(">Di<", ">Dienstag<"), set, de)
+        assertEquals(ArrayValue(listOf("Mo", "Dienstag")), back.values[ResourceKey(ResourceKind.ARRAY, "days")])
+        assertEquals(TextValue("Hallo, %1${'$'}s"), back.values[ResourceKey(ResourceKind.STRING, "hello")])
+        assertEquals(emptyList<String>(), back.skipped)
+    }
+
+    @Test
     fun `csv lists every segment and reads back`() {
         val csv = Exchange.toCsv(set)
         val rows = Exchange.parseCsv(csv)

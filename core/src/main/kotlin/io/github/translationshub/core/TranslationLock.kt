@@ -41,9 +41,14 @@ data class TranslationStatus(val state: TranslationState, val origin: Origin?) {
  * - which machine translations someone edited since (those become [Origin.Human] and are left alone),
  * without reading git history. Grouped by locale with one entry per line, so merges stay simple.
  */
-class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap()) {
+class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(), syncedWith: String? = null) {
 
-    data class Record(val sourceHash: String, val textHash: String, val origin: Origin)
+    /** The translation platform and project the [Record.syncedHash]es describe, such as `lokalise:123abc.456`. */
+    var syncedWith: String? = syncedWith
+        private set
+
+    /** [syncedHash]: the text's hash when it last matched the translation platform (Crowdin, Lokalise, POEditor); null if never synced. */
+    data class Record(val sourceHash: String, val textHash: String, val origin: Origin, val syncedHash: String? = null)
 
     private val records: MutableMap<Locale, MutableMap<ResourceKey, Record>> =
         entries.mapValuesTo(sortedMapOf()) { (_, byKey) -> byKey.toSortedMap() }
@@ -65,7 +70,19 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
 
     /** Records a translation of [source] written by [origin]: after machine translation, or when a person edits a cell. */
     fun put(key: ResourceKey, locale: Locale, source: ResourceValue, translation: ResourceValue, origin: Origin) {
-        records.getOrPut(locale) { sortedMapOf() }[key] = Record(hash(source), hash(translation), origin)
+        val byKey = records.getOrPut(locale) { sortedMapOf() }
+        byKey[key] = Record(hash(source), hash(translation), origin, byKey[key]?.syncedHash)
+    }
+
+    /**
+     * Records that the translation platform has [platform] for the [translation] here, so later changes on either
+     * side can be told apart. They differ when a person keeps their own over the platform's: the IDE's then counts
+     * as the newer change and is uploaded next time.
+     */
+    fun markSynced(key: ResourceKey, locale: Locale, source: ResourceValue, translation: ResourceValue, platform: ResourceValue = translation) {
+        val byKey = records.getOrPut(locale) { sortedMapOf() }
+        val record = byKey[key]?.takeIf { it.textHash == hash(translation) } ?: Record(hash(source), hash(translation), Origin.Human)
+        byKey[key] = record.copy(syncedHash = hash(platform))
     }
 
     /**
@@ -78,6 +95,16 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
             val translation = set.translation(key, locale) ?: continue
             if (record(key, locale) == null) put(key, locale, source.value, translation.value, Origin.Human)
         }
+    }
+
+    /**
+     * Makes the sync state describe [platform]: switching to another platform or project forgets what was in sync
+     * with the old one, so nothing is skipped as "already there" on the new one.
+     */
+    fun syncWith(platform: String) {
+        if (syncedWith == platform) return
+        for (byKey in records.values) byKey.replaceAll { _, record -> record.copy(syncedHash = null) }
+        syncedWith = platform
     }
 
     /** Moves the records of a renamed key, so its translations don't look untracked afterwards. */
@@ -99,7 +126,9 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
     }
 
     fun toJson(): String = buildString {
-        append("{\n  \"version\": $VERSION,\n  \"translations\": {")
+        append("{\n  \"version\": $VERSION,\n")
+        syncedWith?.let { append("  \"syncedWith\": ").append(Json.quote(it)).append(",\n") }
+        append("  \"translations\": {")
         records.entries.forEachIndexed { i, (locale, byKey) ->
             append(if (i == 0) "\n" else ",\n")
             append("    ").append(Json.quote(locale.tag)).append(": {")
@@ -107,7 +136,9 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
                 append(if (j == 0) "\n" else ",\n")
                 append("      ").append(Json.quote(keyId(key))).append(": {\"source\": ").append(Json.quote(record.sourceHash))
                 append(", \"text\": ").append(Json.quote(record.textHash))
-                append(", \"by\": ").append(Json.quote(originId(record.origin))).append('}')
+                append(", \"by\": ").append(Json.quote(originId(record.origin)))
+                record.syncedHash?.let { append(", \"synced\": ").append(Json.quote(it)) }
+                append('}')
             }
             append(if (byKey.isEmpty()) "}" else "\n    }")
         }
@@ -129,10 +160,10 @@ class TranslationLock(entries: Map<Locale, Map<ResourceKey, Record>> = emptyMap(
                     val fields = value as? Map<*, *> ?: return@mapNotNull null
                     val source = fields["source"] as? String ?: return@mapNotNull null
                     val textHash = fields["text"] as? String ?: return@mapNotNull null
-                    key to Record(source, textHash, parseOrigin(fields["by"] as? String))
+                    key to Record(source, textHash, parseOrigin(fields["by"] as? String), fields["synced"] as? String)
                 }.toMap()
             }.toMap()
-            return TranslationLock(entries)
+            return TranslationLock(entries, root["syncedWith"] as? String)
         }
 
         /** A short, stable hash of a value's text: 48 bits is plenty to tell versions of one string apart. */

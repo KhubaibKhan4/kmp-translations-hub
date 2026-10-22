@@ -22,6 +22,8 @@
           text, length and unused keys.</li>
       <li><b>Extract</b> hardcoded strings from Compose UI code to <code>composeResources</code>, one at a time or the
           whole project.</li>
+      <li><b>Sync with Crowdin, Lokalise and POEditor</b>: upload the default strings, download your translators' work,
+          and upload translations made in the IDE. A translation changed on both sides is never overwritten without asking.</li>
       <li>Import and export CSV, XLIFF 1.2 and Android <code>strings.xml</code> for translators.</li>
       <li><b>Run in this locale</b> on an Android device or iOS simulator, with KMP Device Hub.</li>
     </ul>
@@ -47,6 +49,8 @@
                          implementationClass="io.github.translationshub.idea.kotlin.HardcodedComposeTextInspection"/>
         <applicationConfigurable parentId="tools" id="kmp.translations.hub" displayName="KMP Translations Hub"
                                  instance="io.github.translationshub.idea.translate.TranslationSettingsConfigurable"/>
+        <projectConfigurable parentId="kmp.translations.hub" id="kmp.translations.hub.sync" displayName="Translation Platform"
+                             instance="io.github.translationshub.idea.sync.SyncSettingsConfigurable"/>
         <notificationGroup id="KMP Translations Hub" displayType="BALLOON"/>
         <fileEditorProvider implementation="io.github.translationshub.idea.TranslationsEditorProvider"/>
         <gotoDeclarationHandler implementation="io.github.translationshub.idea.ResourceGotoDeclarationHandler"/>

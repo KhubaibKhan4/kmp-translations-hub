@@ -102,6 +102,26 @@ Keys are kept in the IDE's password safe. **Settings → Tools → KMP Translati
 
 <img src="docs/screenshots/06-services.png" alt="Settings: translation service, default language, API keys" width="900">
 
+### Sync with Crowdin, Lokalise and POEditor
+
+**Sync with Translation Platform** in the Translations tab works with the platform your translators already use. It
+uploads the default strings (new and changed keys), downloads your translators' work into `composeResources`, and
+uploads translations made in the IDE that the platform doesn't have yet. Plurals and arrays go both ways as Android
+`strings.xml`, which all three read and write.
+
+Nothing is overwritten silently. `translations.lock.json` remembers what each translation was at the last sync, so:
+
+| Since the last sync | What Sync does |
+|---|---|
+| Changed on the platform | Downloads it. It counts as a translator's, so Translate Changes never replaces it |
+| Changed in the IDE | Keeps it, and uploads it |
+| Changed on both sides | Keeps yours and asks: the platform's, or yours (uploaded next time) |
+
+Set the platform, project ID and token in **Settings → Tools → KMP Translations Hub → Translation Platform**. Each
+`composeResources` folder is one file on the platform, named after its module and source set
+(`composeApp-commonMain-strings.xml`). On POEditor, which has one set of keys per project, use one project per folder
+when modules share key names.
+
 ### Import, export and Run in this locale
 
 Export CSV (all locales), XLIFF 1.2 or Android `strings.xml` for translators, and import them back: plural forms and
@@ -120,6 +140,7 @@ Marketplace. Ratings and reviews on the [Marketplace page](https://plugins.jetbr
 | Add, rename and delete keys; add locales | Plural forms per language, in the side panel and the checks |
 | Missing translations, placeholders, array sizes, keys left behind | Unknown escapes, untranslated text, length, unused keys |
 | `Res.string` navigation and usages | Extract hardcoded strings |
+| | Sync with Crowdin, Lokalise and POEditor |
 | | Import and export: CSV, XLIFF, `strings.xml` |
 | | Run in this locale, with KMP Device Hub |
 

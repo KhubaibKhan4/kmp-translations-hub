@@ -1,27 +1,31 @@
 # Privacy Policy: KMP Translations Hub
 
-_Effective October 22, 2026._
+_Effective October 23, 2026._
 
 This policy covers the **KMP Translations Hub** plugin for JetBrains IDEs, published by Khubaib Khan.
 
 ## Summary
 
 KMP Translations Hub does **not** collect, sell or share any personal data, and has no analytics, telemetry, crash
-reporting or advertising. The plugin has no servers of its own. It connects to the internet in one case only: when
+reporting or advertising. The plugin has no servers of its own. It connects to the internet in two cases only: when
 you run **Translate Changes** with an online translation service, it sends the strings being translated to **the
-service you chose**, and nowhere else.
+service you chose**; and when you run **Sync with Translation Platform**, it exchanges your strings with **the
+platform you set up** (Crowdin, Lokalise or POEditor). Nowhere else.
 
 ## What the plugin does on your computer
 
 - **Your project's strings.** The plugin reads and edits the `composeResources/values…` XML files of the project you
   open, and reads its Kotlin files to find `Res.string…` uses (for navigation and the unused-key check). Nothing is
-  uploaded, except as described under [Translation services](#translation-services).
-- **`translations.lock.json`.** When strings are first machine translated, the plugin writes this file next to the
-  `composeResources` folder. It holds short hashes of texts (not the texts themselves), and which service or "human"
+  uploaded, except as described under [Translation services](#translation-services) and
+  [Translation platforms](#translation-platforms).
+- **`translations.lock.json`.** When strings are first machine translated or synced, the plugin writes this file next
+  to the `composeResources` folder. It holds short hashes of texts (not the texts themselves), and which service or "human"
   wrote each translation. It stays in your project; you decide whether to commit it.
 - **Settings.** Your chosen service, the language of the default values folder, the Claude and OpenAI model names and
-  the optional MyMemory email are stored in the IDE's settings on your computer (`kmp-translations-hub.xml`).
-- **API keys.** DeepL, Google Cloud, Anthropic and OpenAI keys are stored in the IDE's password safe (on macOS the
+  the optional MyMemory email are stored in the IDE's settings on your computer (`kmp-translations-hub.xml`). The
+  translation platform, its project ID and the Crowdin Enterprise organization are stored in the project's `.idea`
+  folder (`kmp-translations-hub.xml`).
+- **API keys.** DeepL, Google Cloud, Anthropic and OpenAI keys, and Crowdin, Lokalise and POEditor tokens, are stored in the IDE's password safe (on macOS the
   Keychain by default, or KeePass, as set in the IDE), never in a settings or project file.
 - **Apple translation helper.** On macOS the plugin copies its small `translationshub-apple` program into the IDE's
   system folder and runs it to use Apple's on-device Translation framework.
@@ -48,6 +52,22 @@ send strings you consider confidential (unreleased product names, for example) t
 translation keeps them on your Mac. The plugin never sends your API keys anywhere except to the service they belong
 to.
 
+## Translation platforms
+
+Sync runs only when you start it in the Translations tab, with the platform set in Settings → Tools → KMP
+Translations Hub → Translation Platform, and only for the folder whose tab you're in. Depending on the options you
+tick, it uploads the default-language strings with their key names and XML comments, uploads translations made in the
+IDE, and downloads the platform's translations.
+
+| Platform | What is sent | Where | Its terms |
+|---|---|---|---|
+| Crowdin | Your token; the strings, key names and comments as an Android `strings.xml` file; the project ID and language codes. | `api.crowdin.com`, or `<organization>.api.crowdin.com` for Crowdin Enterprise | [Crowdin Privacy Policy](https://crowdin.com/privacy-policy) |
+| Lokalise | The same. | `api.lokalise.com` | [Lokalise Privacy Policy](https://lokalise.com/privacy-policy) |
+| POEditor | The same. | `api.poeditor.com` | [POEditor Privacy Policy](https://poeditor.com/terms/privacy) |
+
+Downloads come from the links each platform returns for the export (on Crowdin and Lokalise, their file storage).
+Each platform handles your strings under its own terms and your agreement with it.
+
 ## KMP Device Hub
 
 "Run App in Selected Locale" passes the locale's language tag (for example `de`) to the KMP Device Hub plugin, if you
@@ -62,7 +82,7 @@ account details.
 
 ## Third parties
 
-Apart from the translation service you choose, the plugin sends nothing to third parties. "Start Free Trial" and "Get
+Apart from the translation service and translation platform you choose, the plugin sends nothing to third parties. "Start Free Trial" and "Get
 KMP Device Hub" open JetBrains' website in your browser.
 
 ## Children

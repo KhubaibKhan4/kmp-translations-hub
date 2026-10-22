@@ -105,11 +105,19 @@ object Exchange {
 
     // ---- Android strings.xml: the same format, written fresh ---------------------------------------------
 
-    /** A `strings.xml` with [locale]'s translations, in the default file's order, for tools that read Android resources. */
-    fun toStringsXml(set: TranslationSet, locale: Locale): String = buildString {
+    /**
+     * A `strings.xml` with [locale]'s translations, in the default file's order, for tools that read Android resources.
+     * [locale] null writes the default values that are translatable, with their comments as context for translators;
+     * [only] limits it to some keys. [arraysAsStrings] writes each array item as its own string (`days[2]`), for tools
+     * that skip `<string-array>`; [fromStringsXml] puts them back together.
+     */
+    fun toStringsXml(set: TranslationSet, locale: Locale?, only: Set<ResourceKey>? = null, arraysAsStrings: Boolean = false): String = buildString {
         append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n")
         for (key in set.keys) {
-            val entry = set.translation(key, locale) ?: continue
+            if (only != null && key !in only) continue
+            val entry = if (locale == null) set.source(key)?.takeIf { it.translatable } else set.translation(key, locale)
+            if (entry == null) continue
+            if (locale == null) entry.comment?.let { append("    <!-- ").append(it.replace("--", "- -")).append(" -->\n") }
             when (val value = entry.value) {
                 is TextValue -> append("    <string name=\"").append(key.name).append("\">").append(xmlText(value.text)).append("</string>\n")
                 is PluralsValue -> {
@@ -119,7 +127,11 @@ object Exchange {
                     }
                     append("    </plurals>\n")
                 }
-                is ArrayValue -> {
+                is ArrayValue -> if (arraysAsStrings) {
+                    value.items.forEachIndexed { i, text ->
+                        append("    <string name=\"").append(key.name).append('[').append(i).append("]\">").append(xmlText(text)).append("</string>\n")
+                    }
+                } else {
                     append("    <string-array name=\"").append(key.name).append("\">\n")
                     for (text in value.items) append("        <item>").append(xmlText(text)).append("</item>\n")
                     append("    </string-array>\n")
@@ -129,11 +141,50 @@ object Exchange {
         append("</resources>\n")
     }
 
-    /** Translations from a `strings.xml` (Android `res/values-xx` or another project's `composeResources`). */
-    fun fromStringsXml(text: String, set: TranslationSet): Imported {
-        val entries = StringsXmlParser.parse(text)
-        val values = entries.filter { set.source(it.key)?.translatable == true }.associate { it.key to it.value }
+    /**
+     * Translations from a `strings.xml` (Android `res/values-xx` or another project's `composeResources`). Strings
+     * named like array items (`days[2]`, as [toStringsXml] writes them with arraysAsStrings) become that array,
+     * merged onto [locale]'s current one.
+     */
+    fun fromStringsXml(text: String, set: TranslationSet, locale: Locale? = null): Imported {
+        val parsed = StringsXmlParser.parse(text).map { it.copy(value = unquote(it.value)) }
+        val item = Regex("""^(.+)\[(\d+)]$""")
+        val (items, entries) = parsed.partition { entry ->
+            entry.value is TextValue && item.find(entry.name)?.let { set.source(ResourceKey(ResourceKind.ARRAY, it.groupValues[1])) } != null
+        }
+        val values = entries.filter { set.source(it.key)?.translatable == true }.associate { it.key to it.value } +
+            assemble(items.map { it.name to (it.value as TextValue).text }, set, locale).values
         return Imported(values, entries.filter { set.source(it.key) == null }.map { it.name })
+    }
+
+    /**
+     * Android lets a whole string be wrapped in double quotes (`"It's here"`) instead of escaping it, and tools such
+     * as POEditor export that way. Compose Multiplatform shows such quotes as text, so the quotes are removed and the
+     * apostrophes inside escaped (`It\'s here`), the form Compose reads.
+     */
+    fun unquote(text: String): String {
+        if (text.length < 2 || text.first() != '"' || text.last() != '"' || isEscaped(text, text.length - 1)) return text
+        val inner = text.substring(1, text.length - 1)
+        val out = StringBuilder()
+        for ((i, c) in inner.withIndex()) {
+            if (c == '\'' && !isEscaped(inner, i)) out.append('\\')
+            out.append(c)
+        }
+        return out.toString()
+    }
+
+    private fun unquote(value: ResourceValue): ResourceValue = when (value) {
+        is TextValue -> TextValue(unquote(value.text))
+        is PluralsValue -> PluralsValue(value.items.mapValues { unquote(it.value) })
+        is ArrayValue -> ArrayValue(value.items.map(::unquote))
+    }
+
+    /** Whether the character at [index] follows an odd number of backslashes. */
+    private fun isEscaped(text: String, index: Int): Boolean {
+        var slashes = 0
+        var i = index - 1
+        while (i >= 0 && text[i] == '\\') { slashes++; i-- }
+        return slashes % 2 == 1
     }
 
     /** Segments back into values, merged onto [locale]'s current translation so a file with only some plural forms or items keeps the rest. */

@@ -66,6 +66,30 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         }
     }
 
+    /**
+     * After a sync with a translation platform: writes the platform's translations [values] as a person's, and
+     * records [synced], what the platform now has for each key, against the translation here. [platform] is the
+     * platform's [io.github.translationshub.idea.sync.TranslationPlatform.syncKey]. One command; creates the lock file.
+     */
+    fun applySynced(platform: String, locale: Locale, values: Map<ResourceKey, ResourceValue>, synced: Map<ResourceKey, ResourceValue>) {
+        if (values.isEmpty() && synced.isEmpty()) return
+        if (values.isNotEmpty() && locale !in read().locales) addLocale(locale)
+        val set = read()
+        val targets = values.keys.mapNotNull { key -> targetFile(set, key, locale)?.let { key to it } }.toMap()
+        command("Sync ${locale.tag} translations", targets.values.distinct()) {
+            for ((key, target) in targets) write(set, target, key, locale, values.getValue(key))
+            updateLock(create = true, before = set) { lock ->
+                lock.syncWith(platform)
+                for (key in targets.keys) set.source(key)?.let { lock.put(key, locale, it.value, values.getValue(key), Origin.Human) }
+                for ((key, platform) in synced) {
+                    val source = set.source(key) ?: continue
+                    val local = values[key] ?: set.translation(key, locale)?.value ?: continue
+                    lock.markSynced(key, locale, source.value, local, platform)
+                }
+            }
+        }
+    }
+
     /** Adds a key to the default values file, at the end. */
     fun addKey(name: String, value: ResourceValue) {
         val set = read()

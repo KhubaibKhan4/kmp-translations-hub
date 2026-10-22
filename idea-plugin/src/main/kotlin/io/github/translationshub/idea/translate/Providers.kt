@@ -16,7 +16,7 @@ import java.time.Duration
 data class TranslationRequest(val text: String, val context: String?, val key: String)
 
 /** A failure the user can act on (wrong key, quota, language not installed); not retried. */
-class ProviderException(message: String) : Exception(message)
+class ProviderException @JvmOverloads constructor(message: String, val status: Int? = null) : Exception(message)
 
 /**
  * A translation service. [translate] returns one result per request, in order; null for a string the service
@@ -47,16 +47,29 @@ interface TranslationProvider {
 internal object Http {
     private val client: HttpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(20)).build()
 
-    suspend fun send(request: HttpRequest.Builder, service: String, attempts: Int = 5): HttpResponse<String> {
+    suspend fun send(request: HttpRequest.Builder, service: String, attempts: Int = 5): HttpResponse<String> =
+        send(request, service, HttpResponse.BodyHandlers.ofString(), attempts) { it }
+
+    /** A binary response, such as a translation platform's zip or file download. */
+    suspend fun bytes(request: HttpRequest.Builder, service: String, attempts: Int = 5): ByteArray =
+        send(request, service, HttpResponse.BodyHandlers.ofByteArray(), attempts) { String(it, Charsets.UTF_8) }.body()
+
+    private suspend fun <T> send(
+        request: HttpRequest.Builder,
+        service: String,
+        handler: HttpResponse.BodyHandler<T>,
+        attempts: Int,
+        text: (T) -> String,
+    ): HttpResponse<T> {
         var wait = 1_000L
         repeat(attempts) { attempt ->
-            val response = runCatching { client.sendAsync(request.timeout(Duration.ofSeconds(120)).build(), HttpResponse.BodyHandlers.ofString()).await() }
+            val response = runCatching { client.sendAsync(request.timeout(Duration.ofSeconds(120)).build(), handler).await() }
                 .getOrElse { e -> if (attempt == attempts - 1) throw ProviderException("$service: ${e.message ?: e::class.simpleName}") else null }
             if (response != null) {
                 val code = response.statusCode()
                 if (code in 200..299) return response
-                if (code != 429 && code < 500) throw ProviderException("$service: HTTP $code ${errorText(response.body())}")
-                if (attempt == attempts - 1) throw ProviderException("$service: HTTP $code after $attempts tries ${errorText(response.body())}")
+                if (code != 429 && code < 500) throw ProviderException("$service: HTTP $code ${errorText(text(response.body()))}", code)
+                if (attempt == attempts - 1) throw ProviderException("$service: HTTP $code after $attempts tries ${errorText(text(response.body()))}")
                 val retryAfter = response.headers().firstValue("retry-after").orElse(null)?.toLongOrNull()?.times(1000)
                 delay(retryAfter ?: wait)
             } else {
@@ -71,9 +84,14 @@ internal object Http {
     private fun errorText(body: String): String {
         val json = runCatching { Json.parse(body) }.getOrNull() as? Map<*, *> ?: return body.take(200)
         val error = json["error"]
-        return when (error) {
-            is Map<*, *> -> (error["message"] ?: error).toString()
-            null -> (json["message"] ?: body.take(200)).toString()
+        // Crowdin reports validation errors as {"errors": [{"error": {"errors": [{"message": …}]}}]}.
+        val errors = (json["errors"] as? List<*>)?.flatMap { e ->
+            ((e as? Map<*, *>)?.get("error") as? Map<*, *>)?.get("errors").let { it as? List<*> }.orEmpty().mapNotNull { (it as? Map<*, *>)?.get("message") }
+        }
+        return when {
+            !errors.isNullOrEmpty() -> errors.joinToString("; ")
+            error is Map<*, *> -> (error["message"] ?: error).toString()
+            error == null -> (json["message"] ?: body.take(200)).toString()
             else -> error.toString()
         }
     }

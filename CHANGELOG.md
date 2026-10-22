@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Pro: Sync with Crowdin, Lokalise and POEditor from the Translations tab. It uploads the default strings, downloads
+  your translators' work (plurals and arrays included), and uploads translations made in the IDE that the platform
+  doesn't have. `translations.lock.json` remembers each translation at the last sync: a change on one side wins, a
+  change on both sides is kept as it is in the IDE until you choose. Set it up in Settings → Tools → KMP Translations
+  Hub → Translation Platform.
+- After the third Translate Changes that translates something, a one-time notification asks for a rating on JetBrains
+  Marketplace. It never shows again.
+
 ## 0.1.3
 
 - No deprecated API in IntelliJ IDEA 2026.3: "Open in the Translations tab" opens the file the way every supported version supports.

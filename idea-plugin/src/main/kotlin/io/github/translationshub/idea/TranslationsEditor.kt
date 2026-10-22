@@ -252,6 +252,11 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
                 io.github.translationshub.idea.translate.TranslateChanges.start(project, controller) { reload() }
             }
         },
+        action("Sync with Translation Platform…", AllIcons.Actions.Refresh) {
+            ProLicense.runOrUpsell(project, "Sync with Crowdin, Lokalise and POEditor") {
+                io.github.translationshub.idea.sync.SyncRunner.start(project, controller) { reload() }
+            }
+        },
         action("Export…", AllIcons.ToolbarDecorator.Export) {
             ProLicense.runOrUpsell(project, "Export") { ExchangeActions.export(project, model.set) }
         },
