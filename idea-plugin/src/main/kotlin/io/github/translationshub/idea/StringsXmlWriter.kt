@@ -22,17 +22,17 @@ object StringsXmlWriter {
     fun findTag(file: XmlFile, key: ResourceKey): XmlTag? =
         file.rootTag?.subTags?.firstOrNull { it.name == key.kind.xmlTag && it.getAttributeValue("name") == key.name }
 
-    /** Sets a `<string>`'s text, adding the tag (after [after], or at the end) if this file doesn't have it yet. */
-    fun setText(file: XmlFile, name: String, text: String, after: ResourceKey? = null): XmlTag {
+    /** Sets a `<string>`'s text, adding the tag (after [after], else before [before], else at the end) if this file doesn't have it yet. */
+    fun setText(file: XmlFile, name: String, text: String, after: ResourceKey? = null, before: ResourceKey? = null): XmlTag {
         val key = ResourceKey(ResourceKind.STRING, name)
-        val tag = findTag(file, key) ?: return addTag(file, key, after, body = escape(text))
+        val tag = findTag(file, key) ?: return addTag(file, key, after, before, body = escape(text))
         return setContent(tag, text)
     }
 
     /** Sets one `<item quantity=…>` of a `<plurals>`, keeping the items in CLDR order. */
-    fun setPluralItem(file: XmlFile, name: String, category: PluralCategory, text: String, after: ResourceKey? = null): XmlTag {
+    fun setPluralItem(file: XmlFile, name: String, category: PluralCategory, text: String, after: ResourceKey? = null, before: ResourceKey? = null): XmlTag {
         val key = ResourceKey(ResourceKind.PLURALS, name)
-        val plurals = findTag(file, key) ?: addTag(file, key, after, body = null)
+        val plurals = findTag(file, key) ?: addTag(file, key, after, before, body = null)
         val items = plurals.findSubTags("item")
         val existing = items.firstOrNull { it.getAttributeValue("quantity") == category.xmlName }
         if (existing != null) return setContent(existing, text)
@@ -53,9 +53,9 @@ object StringsXmlWriter {
     }
 
     /** Replaces a `<string-array>`'s items. */
-    fun setArrayItems(file: XmlFile, name: String, items: List<String>, after: ResourceKey? = null): XmlTag {
+    fun setArrayItems(file: XmlFile, name: String, items: List<String>, after: ResourceKey? = null, before: ResourceKey? = null): XmlTag {
         val key = ResourceKey(ResourceKind.ARRAY, name)
-        val array = findTag(file, key) ?: addTag(file, key, after, body = null)
+        val array = findTag(file, key) ?: addTag(file, key, after, before, body = null)
         val existing = array.findSubTags("item")
         items.forEachIndexed { i, text ->
             val item = existing.getOrNull(i)
@@ -82,15 +82,16 @@ object StringsXmlWriter {
     }
 
     /**
-     * Adds an empty `<string>`, `<plurals>` or `<string-array>` right after [after] when this file has it, so the
-     * locale file keeps the source file's order; otherwise at the end.
+     * Adds an empty `<string>`, `<plurals>` or `<string-array>` right after [after] when this file has it, else right
+     * before [before], so the locale file keeps the source file's order; otherwise at the end.
      */
-    private fun addTag(file: XmlFile, key: ResourceKey, after: ResourceKey?, body: String?): XmlTag {
+    private fun addTag(file: XmlFile, key: ResourceKey, after: ResourceKey?, before: ResourceKey?, body: String?): XmlTag {
         val root = requireNotNull(file.rootTag) { "${file.name} has no <resources> tag" }
         val tag = root.createChildTag(key.kind.xmlTag, root.namespace, body ?: "", false)
         tag.setAttribute("name", key.name)
-        val anchor = after?.let { findTag(file, it) }
-        return if (anchor != null) root.addAfter(tag, anchor) as XmlTag else root.addSubTag(tag, false)
+        after?.let { findTag(file, it) }?.let { return root.addAfter(tag, it) as XmlTag }
+        before?.let { findTag(file, it) }?.let { return root.addBefore(tag, it) as XmlTag }
+        return root.addSubTag(tag, false)
     }
 
     /**
