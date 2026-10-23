@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Android `res` folders: every `res/values…/strings.xml` gets the Translations tab, the checks, Translate Changes,
+  sync and import/export, like `composeResources`. Colors, dimensions and themes files get no tab; `values-night` and
+  other qualifiers are variants, not languages.
+- Android's quote rules: text written to a `res` folder (typed, machine translated, imported or synced) has `'`, `"`
+  and a leading `@` escaped. An unescaped `'` is an error, since the build fails, with a quick fix; an unescaped `"`, which
+  Android drops, is a warning.
+- Nothing to translate is skipped: `@string/…` references, arrays of references, `<resources translatable="false">`
+  files and `donottranslate.xml`.
+- A machine translation that adds markup its source doesn't have (`<string name="…">`) is dropped instead of saved.
+
 ## 0.2.0
 
 - Pro: Sync with Crowdin, Lokalise and POEditor, from the Translations tab. It uploads the default strings, downloads

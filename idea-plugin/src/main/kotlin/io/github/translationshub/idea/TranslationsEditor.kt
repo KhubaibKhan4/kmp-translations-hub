@@ -68,7 +68,7 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
     enum class Filter(val label: String) { ALL("All keys"), MISSING("Missing translations"), PROBLEMS("With problems"), STALE("Outdated") }
 
     val controller = TranslationsController(project, root)
-    val model = TranslationsTableModel(controller.read(), controller.lock(), { CheckSettings.options(project) }) { key, locale, text ->
+    val model = TranslationsTableModel(controller.read(), controller.lock(), { CheckSettings.options(project, root) }) { key, locale, text ->
         edit { controller.setValue(key, locale, TextValue(text)) }
     }
     val table = JBTable(model)

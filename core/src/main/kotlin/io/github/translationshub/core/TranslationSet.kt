@@ -8,9 +8,10 @@ package io.github.translationshub.core
  * columns: they override single keys for a theme or density rather than translate the app.
  */
 class TranslationSet(
-    /** The `composeResources` folder, as a path. */
+    /** The `composeResources` (or Android `res`) folder, as a path. */
     val root: String,
     files: List<StringsFile>,
+    val format: ResourceFormat = ResourceFormat.COMPOSE,
 ) {
     val sourceFiles: List<StringsFile> = files.filter { it.qualifiers.locale == null && it.qualifiers.other.isEmpty() }
     val variantFiles: List<StringsFile> = files.filter { it.qualifiers.other.isNotEmpty() }

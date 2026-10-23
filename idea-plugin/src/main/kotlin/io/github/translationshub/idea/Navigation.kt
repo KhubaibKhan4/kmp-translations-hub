@@ -24,6 +24,7 @@ import com.intellij.psi.xml.XmlToken
 import com.intellij.psi.xml.XmlTokenType
 import com.intellij.ui.awt.RelativePoint
 import io.github.translationshub.core.ResourceKey
+import io.github.translationshub.core.ResourceFormat
 import io.github.translationshub.core.ResourceKind
 import java.awt.event.MouseEvent
 
@@ -71,7 +72,7 @@ class ResourceUsagesLineMarkerProvider : LineMarkerProvider {
         val name = tag.getAttributeValue("name") ?: return null
         val file = tag.containingFile.virtualFile ?: return null
         val root = ResourceFolders.rootOf(file) ?: return null
-        if (file.parent.name != "values") return null
+        if (file.parent.name != "values" || ResourceFolders.format(root) != ResourceFormat.COMPOSE) return null
         val key = ResourceKey(kind, name)
         return LineMarkerInfo(
             element, element.textRange, AllIcons.Gutter.ImplementedMethod, { "Find uses of Res.${accessorKind(kind)}.$name" },

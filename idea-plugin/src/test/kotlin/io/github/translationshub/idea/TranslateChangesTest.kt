@@ -24,7 +24,7 @@ import java.net.http.HttpRequest
 import java.util.concurrent.atomic.AtomicInteger
 
 /** A provider that "translates" by tagging text with the locale, keeping the ⟦n⟧ tokens where they were. */
-private class FakeProvider(private val breakPlaceholdersOf: String? = null) : TranslationProvider {
+private class FakeProvider(private val breakPlaceholdersOf: String? = null, private val addMarkupTo: String? = null) : TranslationProvider {
     override val id = "fake"
     override val displayName = "Fake"
     override val protection = Protection.Style.BRACKETS
@@ -44,7 +44,13 @@ private class FakeProvider(private val breakPlaceholdersOf: String? = null) : Tr
         }
         kotlinx.coroutines.delay(20)
         inFlight.decrementAndGet()
-        return requests.map { r -> if (r.key == breakPlaceholdersOf) "[${to.tag}] lost" else "[${to.tag}] ${r.text}" }
+        return requests.map { r ->
+            when (r.key) {
+                breakPlaceholdersOf -> "[${to.tag}] lost"
+                addMarkupTo -> "<string name=\"cq\">[${to.tag}] ${r.text}</string>"
+                else -> "[${to.tag}] ${r.text}"
+            }
+        }
     }
 }
 
@@ -111,6 +117,13 @@ class TranslateChangesTest : BasePlatformTestCase() {
         assertEquals("Fake changed a placeholder", summary.failed.getValue(de).getValue(ResourceKey(ResourceKind.STRING, "hello")))
         // The rest of the locale was still written.
         assertNotNull(controller.read().translation(ResourceKey(ResourceKind.PLURALS, "files"), de))
+    }
+
+    fun `test a result that adds markup is not saved`() {
+        val summary = translate(FakeProvider(addMarkupTo = "bye"))
+        assertEquals("Tschüss", (controller.read().translation(ResourceKey(ResourceKind.STRING, "bye"), de)!!.value as TextValue).text)
+        assertNull(controller.read().translation(ResourceKey(ResourceKind.STRING, "bye"), pl))
+        assertEquals("Fake added markup", summary.failed.getValue(pl).getValue(ResourceKey(ResourceKind.STRING, "bye")))
     }
 
     fun `test a string whose tokens get dropped is retried with plain placeholders`() {
