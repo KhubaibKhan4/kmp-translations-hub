@@ -6,12 +6,14 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiManager
 import com.intellij.psi.xml.XmlFile
+import io.github.translationshub.core.AndroidText
 import io.github.translationshub.core.ArrayValue
 import io.github.translationshub.core.FolderQualifiers
 import io.github.translationshub.core.Locale
 import io.github.translationshub.core.Origin
 import io.github.translationshub.core.PluralCategory
 import io.github.translationshub.core.PluralsValue
+import io.github.translationshub.core.ResourceFormat
 import io.github.translationshub.core.ResourceKey
 import io.github.translationshub.core.ResourceKind
 import io.github.translationshub.core.ResourceValue
@@ -30,8 +32,19 @@ class TranslationsController(private val project: Project, val root: VirtualFile
 
     fun lock(): TranslationLock = LockFiles.read(root).also { it.adoptUntracked(read()) }
 
+    private val format = ResourceFolders.format(root)
+
+    /**
+     * The text as it's written to the file and recorded in the lock: in an Android `res` folder, the quotes and leading
+     * `@` Android rejects are escaped, whether the text was typed, machine translated, imported or synced.
+     */
+    private fun stored(value: ResourceValue): ResourceValue = if (format == ResourceFormat.ANDROID) AndroidText.escape(value) else value
+
+    private fun stored(values: Map<ResourceKey, ResourceValue>) = values.mapValues { stored(it.value) }
+
     /** Sets one cell: [locale] null is the default (source) column. Typing in a cell makes it a person's translation. */
-    fun setValue(key: ResourceKey, locale: Locale?, value: ResourceValue) {
+    fun setValue(key: ResourceKey, locale: Locale?, raw: ResourceValue) {
+        val value = stored(raw)
         val set = read()
         val target = targetFile(set, key, locale) ?: error("No values${locale?.let { "-${it.qualifier}" } ?: ""} file for ${key.name}")
         command("Edit ${key.name} (${locale?.tag ?: "default"})", listOf(target)) {
@@ -52,7 +65,8 @@ class TranslationsController(private val project: Project, val root: VirtualFile
     fun importValues(locale: Locale, values: Map<ResourceKey, ResourceValue>) =
         applyValues(locale, values, Origin.Human, "Import ${values.size} ${locale.tag} translations")
 
-    private fun applyValues(locale: Locale, values: Map<ResourceKey, ResourceValue>, origin: Origin, name: String) {
+    private fun applyValues(locale: Locale, raw: Map<ResourceKey, ResourceValue>, origin: Origin, name: String) {
+        val values = stored(raw)
         if (values.isEmpty()) return
         if (locale !in read().locales) addLocale(locale)
         val set = read()
@@ -71,7 +85,9 @@ class TranslationsController(private val project: Project, val root: VirtualFile
      * records [synced], what the platform now has for each key, against the translation here. [platform] is the
      * platform's [io.github.translationshub.idea.sync.TranslationPlatform.syncKey]. One command; creates the lock file.
      */
-    fun applySynced(platform: String, locale: Locale, values: Map<ResourceKey, ResourceValue>, synced: Map<ResourceKey, ResourceValue>) {
+    fun applySynced(platform: String, locale: Locale, rawValues: Map<ResourceKey, ResourceValue>, rawSynced: Map<ResourceKey, ResourceValue>) {
+        val values = stored(rawValues)
+        val synced = stored(rawSynced)
         if (values.isEmpty() && synced.isEmpty()) return
         if (values.isNotEmpty() && locale !in read().locales) addLocale(locale)
         val set = read()
@@ -91,7 +107,8 @@ class TranslationsController(private val project: Project, val root: VirtualFile
     }
 
     /** Adds a key to the default values file, at the end. */
-    fun addKey(name: String, value: ResourceValue) {
+    fun addKey(name: String, raw: ResourceValue) {
+        val value = stored(raw)
         val set = read()
         val key = ResourceKey(value.kind, name)
         require(set.source(key) == null) { "${key.name} already exists" }

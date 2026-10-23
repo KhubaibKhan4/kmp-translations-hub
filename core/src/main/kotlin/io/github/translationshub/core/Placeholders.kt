@@ -34,4 +34,18 @@ object Placeholders {
 
     /** Index → conversion, ignoring order and repeats: `%1$s … %2$d` matches `%2$d … %1$s`. */
     fun signature(text: String): Map<Int, Char> = find(text).associate { it.index to it.conversion.lowercaseChar() }
+
+    private val tag = Regex("""<(/?)([A-Za-z][\w:.-]*)[^<>]*>""")
+
+    /**
+     * The markup tags in [text] (`b`, `/b`, `a`…), with repeats. Inline markup is protected and restored as it was, so
+     * a translation never has a tag its source lacks; one that does came back as junk (`<string name="cq">`).
+     */
+    fun tags(text: String): List<String> = tag.findAll(text).map { it.groupValues[1] + it.groupValues[2] }.toList()
+
+    /** Whether [translation] adds no tag that [source] doesn't have as many times. */
+    fun addsNoMarkup(source: String, translation: String): Boolean {
+        val allowed = tags(source).groupingBy { it }.eachCount()
+        return tags(translation).groupingBy { it }.eachCount().all { (name, n) -> n <= (allowed[name] ?: 0) }
+    }
 }

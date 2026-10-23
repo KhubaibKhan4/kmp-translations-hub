@@ -7,10 +7,10 @@ import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 
-/** Adds the "Translations" tab next to the text editor of every XML file in `composeResources/values…`. */
+/** Adds the "Translations" tab next to the text editor of every strings file in `composeResources/values…` or `res/values…`. */
 class TranslationsEditorProvider : FileEditorProvider, DumbAware {
 
-    override fun accept(project: Project, file: VirtualFile) = ResourceFolders.rootOf(file) != null
+    override fun accept(project: Project, file: VirtualFile) = ResourceFolders.rootOf(file) != null && ResourceFolders.hasStrings(file)
 
     override fun createEditor(project: Project, file: VirtualFile): FileEditor =
         TranslationsEditor(project, file, ResourceFolders.rootOf(file)!!)

@@ -34,7 +34,7 @@ class TranslationsInspection : LocalInspectionTool() {
             val here = set.sourceFiles.any { it.path == virtualFile.path }
             val locale = set.locales.firstOrNull { l -> set.filesFor(l).any { it.path == virtualFile.path } }
             if (!here && locale == null) return
-            val problems = Checks.run(set, CheckSettings.options(file.project))
+            val problems = Checks.run(set, CheckSettings.options(file.project, root))
 
             if (here) {
                 problems.filterIsInstance<Problem.Missing>().groupBy { it.key }.forEach { (key, missing) ->
@@ -59,9 +59,12 @@ class TranslationsInspection : LocalInspectionTool() {
                 val fixes = buildList<LocalQuickFix> {
                     if (problem is Problem.MissingPluralCategories) add(AddPluralFormsFix(problem.key, problem.locale, problem.missing))
                     if (problem is Problem.NotInSource || problem is Problem.Unused) add(DeleteKeyFix(problem.key, everywhere = problem is Problem.Unused))
+                    if (problem is Problem.UnescapedQuote) add(EscapeQuotesFix(problem.key, problem.locale))
                     add(OpenInTranslationsFix(problem.key, problem.locale))
                 }
-                holder.registerProblem(element, problem.message, *fixes.toTypedArray())
+                // A quote Android rejects fails the build: an error, not a warning.
+                val type = if (problem is Problem.UnescapedQuote && problem.failsBuild) ProblemHighlightType.GENERIC_ERROR else ProblemHighlightType.GENERIC_ERROR_OR_WARNING
+                holder.registerProblem(element, problem.message, type, *fixes.toTypedArray())
             }
         }
     }
@@ -91,6 +94,19 @@ class TranslationsInspection : LocalInspectionTool() {
             if (!everywhere) return StringsXmlWriter.delete(file, key).let { }
             val root = ResourceFolders.rootOf(file.virtualFile ?: return) ?: return
             TranslationsController(project, root).deleteKey(key)
+        }
+    }
+
+    /** Escapes the quotes Android rejects, through the controller so the lock file follows. */
+    private class EscapeQuotesFix(val key: ResourceKey, val locale: Locale?) : LocalQuickFix {
+        override fun getFamilyName() = "Escape quotes for Android"
+        override fun startInWriteAction() = false
+        override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
+            val root = ResourceFolders.rootOf(descriptor.psiElement.containingFile?.virtualFile ?: return) ?: return
+            val controller = TranslationsController(project, root)
+            val set = controller.read()
+            val value = (if (locale == null) set.source(key) else set.translation(key, locale))?.value ?: return
+            controller.setValue(key, locale, value)
         }
     }
 

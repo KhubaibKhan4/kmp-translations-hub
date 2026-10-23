@@ -59,6 +59,16 @@ sealed interface Problem {
         override val message get() = "Not used in Kotlin code"
     }
 
+    /**
+     * A quote Android doesn't take as text: an unescaped `'` fails the build; an unescaped `"` is silently dropped, so
+     * the text shows without it.
+     */
+    data class UnescapedQuote(override val key: ResourceKey, override val locale: Locale?, val quote: Char) : Problem {
+        val failsBuild get() = quote == '\''
+        override val message get() = if (failsBuild) "Android fails to build on an unescaped ': write \\', or wrap the whole text in double quotes"
+        else "Android drops an unescaped \", so it won't show: write \\\" to keep it"
+    }
+
     /** The key exists in a translation but not in the source. */
     data class NotInSource(override val key: ResourceKey, override val locale: Locale) : Problem {
         override val message get() = "Not in the default values: the source key was renamed or removed"
@@ -90,6 +100,7 @@ object Checks {
                 continue
             }
             missingPlurals(key, null, source.value, options)?.let(::add)
+            if (set.format == ResourceFormat.ANDROID) unescapedQuote(key, null, source.value)?.let(::add)
             if (options.extended) unknownEscape(key, null, source.value)?.let(::add)
             if (options.usedKeys != null && key !in options.usedKeys) add(Problem.Unused(key))
             if (!source.translatable) continue
@@ -102,6 +113,7 @@ object Checks {
                 }
                 placeholderMismatch(key, locale, source.value, translation.value)?.let(::add)
                 missingPlurals(key, locale, translation.value, options)?.let(::add)
+                if (set.format == ResourceFormat.ANDROID) unescapedQuote(key, locale, translation.value)?.let(::add)
                 val s = source.value
                 val t = translation.value
                 if (s is ArrayValue && t is ArrayValue && s.items.size != t.items.size) {
@@ -140,6 +152,9 @@ object Checks {
         val missing = needed - value.items.keys
         return if (missing.isEmpty()) null else Problem.MissingPluralCategories(key, locale, missing)
     }
+
+    private fun unescapedQuote(key: ResourceKey, locale: Locale?, value: ResourceValue): Problem? =
+        value.texts.firstNotNullOfOrNull(AndroidText::unescapedQuote)?.let { Problem.UnescapedQuote(key, locale, it) }
 
     /** Compose turns `\n`, `\t`, `\'`, `\"`, `\\` and `\uXXXX` into characters; anything else stays as written. */
     private val escape = Regex("""\\(u[0-9a-fA-F]{4}|.)""")

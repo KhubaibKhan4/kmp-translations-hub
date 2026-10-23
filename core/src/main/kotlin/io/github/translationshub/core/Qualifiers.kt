@@ -75,6 +75,6 @@ data class FolderQualifiers(val locale: Locale?, val other: List<String> = empty
         }
 
         /** Two- and three-letter qualifiers that are not languages. */
-        private val NON_LANGUAGE_QUALIFIERS = setOf("dpi", "car", "sw", "w", "h")
+        private val NON_LANGUAGE_QUALIFIERS = setOf("dpi", "car", "sw", "w", "h", "tv")
     }
 }
