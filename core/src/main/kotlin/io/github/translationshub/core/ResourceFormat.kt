@@ -9,10 +9,14 @@ enum class ResourceFormat(val rootName: String) {
     COMPOSE("composeResources"),
 
     /** Android's `res`, in an Android app or a KMP module's `androidMain`. */
-    ANDROID("res");
+    ANDROID("res"),
+
+    /** An Xcode String Catalog: the "root" is the `.xcstrings` file itself, holding every language. */
+    IOS(XcStrings.EXTENSION);
 
     companion object {
-        fun ofRoot(folderName: String): ResourceFormat? = entries.firstOrNull { it.rootName == folderName }
+        /** The format of a `values…` folders' parent: `composeResources` or `res`. */
+        fun ofRoot(folderName: String): ResourceFormat? = entries.firstOrNull { it != IOS && it.rootName == folderName }
     }
 }
 

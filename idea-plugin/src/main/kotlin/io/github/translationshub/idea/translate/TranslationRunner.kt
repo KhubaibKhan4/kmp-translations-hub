@@ -66,7 +66,7 @@ class TranslationRunner(private val provider: TranslationProvider, private val s
                                 restored == null -> { reasons[index] = "${provider.displayName} lost a placeholder"; retry += index }
                                 !placeholdersMatch(segment, restored) -> { reasons[index] = "${provider.displayName} changed a placeholder"; retry += index }
                                 !Placeholders.addsNoMarkup(segment.text, restored) -> { reasons[index] = "${provider.displayName} added markup"; retry += index }
-                                else -> { results[index] = restored; reasons.remove(index) }
+                                else -> { results[index] = Placeholders.keepEdgeWhitespace(segment.text, restored); reasons.remove(index) }
                             }
                         }
                         if (countProgress) {

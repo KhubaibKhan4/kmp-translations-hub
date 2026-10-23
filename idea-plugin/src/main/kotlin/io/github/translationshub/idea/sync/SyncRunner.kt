@@ -120,6 +120,11 @@ object SyncRunner {
     }
 
     fun start(project: Project, controller: TranslationsController, onDone: () -> Unit) {
+        if (io.github.translationshub.idea.ResourceFolders.isCatalog(controller.root)) {
+            Messages.showInfoMessage(project, "Sync with Crowdin, Lokalise and POEditor works with composeResources and Android res folders. " +
+                "String Catalogs aren't supported yet: use Export and Import to share them with translators meanwhile.", "Sync Translations")
+            return
+        }
         val settings = SyncSettings.getInstance(project)
         val platform = settings.platform().getOrElse { e ->
             val answer = Messages.showOkCancelDialog(project, e.message, "Sync Translations", "Open Settings", "Cancel", Messages.getInformationIcon())

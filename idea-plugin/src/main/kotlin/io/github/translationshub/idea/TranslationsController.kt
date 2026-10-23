@@ -1,5 +1,7 @@
 package io.github.translationshub.idea
 
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -20,10 +22,12 @@ import io.github.translationshub.core.ResourceValue
 import io.github.translationshub.core.TextValue
 import io.github.translationshub.core.TranslationLock
 import io.github.translationshub.core.TranslationSet
+import io.github.translationshub.core.XcStrings
 
 /**
- * Every change to one `composeResources` folder: cells, keys, locales, and machine translations. Each call is one
- * command, so one Undo, and updates `translations.lock.json` in the same command when the project has one.
+ * Every change to one `composeResources` or `res` folder, or one String Catalog: cells, keys, locales, and machine
+ * translations. Each call is one command, so one Undo, and updates the lock file in the same command when the project
+ * has one. A catalog is changed through [XcStrings] in memory and written back as the smallest edit to its document.
  */
 class TranslationsController(private val project: Project, val root: VirtualFile) {
 
@@ -123,7 +127,7 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         require(set.source(newKey) == null) { "$newName already exists" }
         val files = filesWith(set, key)
         command("Rename ${key.name} to $newName", files) {
-            files.forEach { StringsXmlWriter.rename(psi(it), key, newName) }
+            catalog?.rename(key.name, newName) ?: files.forEach { StringsXmlWriter.rename(psi(it), key, newName) }
             updateLock(create = false) { it.rename(key, newKey) }
         }
     }
@@ -133,7 +137,7 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         val set = read()
         val files = filesWith(set, key)
         command("Delete ${key.name}", files) {
-            files.forEach { StringsXmlWriter.delete(psi(it), key) }
+            catalog?.delete(key.name) ?: files.forEach { StringsXmlWriter.delete(psi(it), key) }
             updateLock(create = false) { it.remove(key) }
         }
     }
@@ -150,6 +154,11 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         val fileName = set.sourceFiles.firstOrNull()?.fileName ?: "strings.xml"
         val created = mutableListOf<VirtualFile>()
         val name = if (distinct.size == 1) "Add locale ${distinct.single().tag}" else "Add ${distinct.size} locales"
+        if (format == ResourceFormat.IOS) {
+            // A language lives in the catalog itself: every string gets a `new` localization, as Xcode does.
+            command(name, emptyList()) { distinct.forEach { catalog!!.addLocale(it) } }
+            return distinct.map { root }
+        }
         command(name, emptyList()) {
             for (locale in distinct) {
                 val folderName = FolderQualifiers(locale).folderName
@@ -184,6 +193,10 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         written: Map<ResourceKey, VirtualFile> = emptyMap(),
     ) {
         require(value.kind == key.kind) { "A ${key.kind.xmlTag} can't hold a ${value.kind.xmlTag}" }
+        catalog?.let { catalog ->
+            if (locale == null && set.source(key) == null) catalog.add(key.name, value) else catalog.set(key.name, locale, value)
+            return
+        }
         val file = psi(target)
         val after = neighbourIn(set, key, locale, target, written, before = true)
         val before = if (after == null) neighbourIn(set, key, locale, target, written, before = false) else null
@@ -254,21 +267,59 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         val lock = LockFiles.read(root)
         if (!exists && before != null) lock.adoptUntracked(before)
         change(lock)
+        flushCatalog()
         // The PSI edits of this command reach the documents, which read() uses, only once flushed.
         val documents = PsiDocumentManager.getInstance(project)
-        ResourceFolders.xmlFiles(root).mapNotNull { FileDocumentManager.getInstance().getCachedDocument(it) }
+        ResourceFolders.files(root).mapNotNull { FileDocumentManager.getInstance().getCachedDocument(it) }
             .forEach(documents::doPostponedOperationsAndUnblockDocument)
         lock.prune(read())
         LockFiles.write(root, lock, create, this)
     }
 
     private fun command(name: String, files: List<VirtualFile>, edit: () -> Unit) {
-        TranslationsWriteCommand.run(project, name, files.distinct().map(::psi), edit)
+        if (format != ResourceFormat.IOS) return TranslationsWriteCommand.run(project, name, files.distinct().map(::psi), edit)
+        val document = catalogDocument()
+        WriteCommandAction.writeCommandAction(project).withName(name).run<RuntimeException> {
+            catalog = XcStrings.parse(document.text)
+            try {
+                edit()
+                flushCatalog()
+            } finally {
+                catalog = null
+            }
+        }
+    }
+
+    /** The String Catalog being changed in the running command; null outside one, or for `values…` folders. */
+    private var catalog: XcStrings? = null
+
+    private fun catalogDocument(): Document = requireNotNull(FileDocumentManager.getInstance().getDocument(root)) { "Can't open ${root.name}" }
+
+    /** Writes the catalog being changed to its document, as the smallest replacement, so Undo and diffs stay small. */
+    private fun flushCatalog() {
+        val json = catalog?.toJson() ?: return
+        val document = catalogDocument()
+        val old = document.charsSequence
+        if (old.contentEquals(json)) return
+        var start = 0
+        while (start < old.length && start < json.length && old[start] == json[start]) start++
+        var oldEnd = old.length
+        var newEnd = json.length
+        while (oldEnd > start && newEnd > start && old[oldEnd - 1] == json[newEnd - 1]) { oldEnd--; newEnd-- }
+        document.replaceString(start, oldEnd, json.substring(start, newEnd))
+        PsiDocumentManager.getInstance(project).commitDocument(document)
     }
 
     companion object {
-        /** Keys can't be empty or contain characters Compose's accessor generator rejects. */
-        fun isValidKeyName(name: String) = Regex("[A-Za-z_][A-Za-z0-9_.]*").matches(name)
+        /**
+         * Keys can't be empty or contain characters Compose's (or Android's) accessor generator rejects. A String
+         * Catalog's key is often the English text itself, so any text but blank goes there.
+         */
+        fun isValidKeyName(name: String, format: ResourceFormat = ResourceFormat.COMPOSE) =
+            if (format == ResourceFormat.IOS) name.isNotBlank() else Regex("[A-Za-z_][A-Za-z0-9_.]*").matches(name)
+
+        fun keyNameRule(format: ResourceFormat) =
+            if (format == ResourceFormat.IOS) "Enter a key" else "Use letters, digits and underscores, not starting with a digit"
 
         fun emptyValue(kind: ResourceKind): ResourceValue = when (kind) {
             ResourceKind.STRING -> TextValue("")

@@ -123,7 +123,8 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
         }, this)
         project.messageBus.connect(this).subscribe(VirtualFileManager.VFS_CHANGES, object : BulkFileListener {
             override fun after(events: List<VFileEvent>) {
-                if (events.any { it.path.startsWith(root.path + "/") || it.path.startsWith(root.parent.path + "/translations.lock") }) scheduleReload()
+                val lock = root.parent.path + "/" + LockFiles.name(root)
+                if (events.any { it.path == root.path || it.path.startsWith(root.path + "/") || it.path == lock }) scheduleReload()
             }
         })
     }
@@ -221,7 +222,7 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
 
     private fun actions(): List<AnAction> = listOf(
         action("Add Key", AllIcons.General.Add) {
-            val dialog = AddKeyDialog(project) { name, kind -> model.set.source(ResourceKey(kind, name)) == null }
+            val dialog = AddKeyDialog(project, model.set.format) { name, kind -> model.set.source(ResourceKey(kind, name)) == null }
             if (dialog.showAndGet()) {
                 edit { controller.addKey(dialog.keyName, dialog.value) }
                 select(Cell(ResourceKey(dialog.kind, dialog.keyName), null))
@@ -230,7 +231,7 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
         action("Rename Key", AllIcons.Actions.Edit, enabled = { selectedKey() != null }) {
             val key = selectedKey() ?: return@action
             val name = Messages.showInputDialog(project, "New name for ${key.name}, in every locale:", "Rename Key", null, key.name,
-                KeyNameValidator { model.set.source(key.copy(name = it)) == null })
+                KeyNameValidator(model.set.format) { model.set.source(key.copy(name = it)) == null })
             if (name != null && name != key.name) edit { controller.renameKey(key, name) }
         },
         action("Delete Key", AllIcons.General.Remove, enabled = { selectedKey() != null }) {
@@ -277,7 +278,7 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
     override fun getDocumentReferences(): Collection<DocumentReference> {
         val documents = FileDocumentManager.getInstance()
         val references = DocumentReferenceManager.getInstance()
-        return (ResourceFolders.xmlFiles(root) + listOfNotNull(LockFiles.find(root))).mapNotNull(documents::getDocument).map(references::create)
+        return (ResourceFolders.files(root) + listOfNotNull(LockFiles.find(root))).mapNotNull(documents::getDocument).map(references::create)
     }
 
     override fun getComponent(): JComponent = panel
@@ -335,12 +336,15 @@ class TranslationsEditor(private val project: Project, private val file: Virtual
     }
 }
 
-/** Accepts names Compose can generate an accessor for and that [isFree] says aren't taken. */
-class KeyNameValidator(private val isFree: (String) -> Boolean) : com.intellij.openapi.ui.InputValidatorEx {
+/** Accepts names Compose (or Android) can generate an accessor for, or any text in a catalog, that [isFree] says aren't taken. */
+class KeyNameValidator(
+    private val format: io.github.translationshub.core.ResourceFormat = io.github.translationshub.core.ResourceFormat.COMPOSE,
+    private val isFree: (String) -> Boolean,
+) : com.intellij.openapi.ui.InputValidatorEx {
     override fun checkInput(inputString: String) = getErrorText(inputString) == null
     override fun canClose(inputString: String) = checkInput(inputString)
     override fun getErrorText(inputString: String): String? = when {
-        !TranslationsController.isValidKeyName(inputString) -> "Use letters, digits and underscores, not starting with a digit"
+        !TranslationsController.isValidKeyName(inputString, format) -> TranslationsController.keyNameRule(format)
         !isFree(inputString) -> "$inputString already exists"
         else -> null
     }

@@ -11,7 +11,14 @@ import io.github.translationshub.core.TranslationLock
  */
 object LockFiles {
 
-    fun find(root: VirtualFile): VirtualFile? = root.parent?.findChild(TranslationLock.FILE_NAME)
+    fun find(root: VirtualFile): VirtualFile? = root.parent?.findChild(name(root))
+
+    /**
+     * `translations.lock.json` beside a `values…` folders' root; `Localizable.translations.lock.json` beside a String
+     * Catalog, since an app often has two (Localizable, InfoPlist) in one folder.
+     */
+    fun name(root: VirtualFile): String =
+        if (ResourceFolders.isCatalog(root)) "${root.nameWithoutExtension}.${TranslationLock.FILE_NAME}" else TranslationLock.FILE_NAME
 
     /** The lock as saved, unsaved edits included; empty when there is no file or it can't be read. */
     fun read(root: VirtualFile): TranslationLock {
@@ -25,7 +32,7 @@ object LockFiles {
      * command. With [create] false, nothing happens when the project has no lock file yet.
      */
     fun write(root: VirtualFile, lock: TranslationLock, create: Boolean, requestor: Any) {
-        val file = find(root) ?: if (create) root.parent.createChildData(requestor, TranslationLock.FILE_NAME) else return
+        val file = find(root) ?: if (create) root.parent.createChildData(requestor, name(root)) else return
         val document = FileDocumentManager.getInstance().getDocument(file) ?: return
         val json = lock.toJson()
         if (document.text != json) document.setText(json)

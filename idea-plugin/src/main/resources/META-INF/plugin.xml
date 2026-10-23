@@ -31,6 +31,8 @@
     <depends>com.intellij.modules.xml</depends>
     <!-- Bundled in every Android Studio and IntelliJ IDEA this supports; needed for string extraction (Kotlin PSI). -->
     <depends>org.jetbrains.kotlin</depends>
+    <!-- Opens Xcode String Catalogs (.xcstrings) as JSON, so the Translations tab sits next to a text editor. -->
+    <depends optional="true" config-file="kmp-translations-hub-json.xml">com.intellij.modules.json</depends>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
         <supportsKotlinPluginMode supportsK2="true"/>

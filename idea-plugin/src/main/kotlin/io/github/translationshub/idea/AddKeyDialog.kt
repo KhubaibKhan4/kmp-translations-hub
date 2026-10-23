@@ -15,7 +15,11 @@ import io.github.translationshub.core.TextValue
 import javax.swing.JComponent
 
 /** Name, kind and default text of a new key. */
-class AddKeyDialog(project: Project, private val isFree: (String, ResourceKind) -> Boolean) : DialogWrapper(project) {
+class AddKeyDialog(
+    project: Project,
+    private val format: io.github.translationshub.core.ResourceFormat = io.github.translationshub.core.ResourceFormat.COMPOSE,
+    private val isFree: (String, ResourceKind) -> Boolean,
+) : DialogWrapper(project) {
 
     private val nameField = JBTextField(30)
     private val kindBox = ComboBox(ResourceKind.entries.toTypedArray()).apply {
@@ -55,7 +59,7 @@ class AddKeyDialog(project: Project, private val isFree: (String, ResourceKind) 
     override fun getPreferredFocusedComponent() = nameField
 
     override fun doValidate(): ValidationInfo? = when {
-        !TranslationsController.isValidKeyName(keyName) -> ValidationInfo("Use letters, digits and underscores, not starting with a digit", nameField)
+        !TranslationsController.isValidKeyName(keyName, format) -> ValidationInfo(TranslationsController.keyNameRule(format), nameField)
         !isFree(keyName, kind) -> ValidationInfo("$keyName already exists", nameField)
         else -> null
     }

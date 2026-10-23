@@ -17,8 +17,12 @@ import io.github.translationshub.core.ResourceKey
 /** The checks the table and the inspection run: the free set, or everything with Pro. */
 object CheckSettings {
 
-    fun options(project: Project, root: VirtualFile): CheckOptions =
-        if (ProLicense.isLicensed()) CheckOptions(usedKeys = UsedKeys.all(project, ResourceFolders.format(root))) else CheckOptions.FREE
+    fun options(project: Project, root: VirtualFile): CheckOptions {
+        if (!ProLicense.isLicensed()) return CheckOptions.FREE
+        val format = ResourceFolders.format(root)
+        // A String Catalog's uses in Swift aren't searched: no key would count as used.
+        return CheckOptions(usedKeys = if (format == ResourceFormat.IOS) null else UsedKeys.all(project, format))
+    }
 }
 
 /**
