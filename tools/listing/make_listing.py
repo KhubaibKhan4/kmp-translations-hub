@@ -223,6 +223,21 @@ screenshot("07-sync.png", "Sync with Crowdin, Lokalise and POEditor",
            sync_place)
 
 
+def platforms_place(canvas):
+    android = fit(window(render("android-table"), "app/src/main/res · strings.xml · Translations"), 1640, 520)
+    ios = fit(window(render("catalog-table"), "iosApp/Localizable.xcstrings · Translations"), 1640, 520)
+    label(canvas, (140, 360), "Android: res/values…, with Android's quote rules")
+    card(canvas, android, (140, 420))
+    top = 420 + android.size[1] + 90
+    label(canvas, (W - 140 - ios.size[0], top - 60), "iOS: Xcode String Catalogs, changed line by line")
+    card(canvas, ios, (W - 140 - ios.size[0], top))
+
+
+screenshot("08-android-ios.png", "Android and iOS strings too",
+           "Android res folders and Xcode String Catalogs get the same table, checks and Translate Changes.",
+           platforms_place)
+
+
 # ---- Banner -------------------------------------------------------------------------------------------------
 
 BW, BH = 1920, 1080
@@ -262,7 +277,7 @@ banner = banner_background()
 banner.alpha_composite(ICON.resize((108, 108), Image.LANCZOS), (96, 112))
 gradient_text(banner, (92, 262), "Every locale,\none table", helvetica(104, True))
 d = ImageDraw.Draw(banner)
-d.multiline_text((96, 520), "Edit, check and translate your Compose\nMultiplatform strings without leaving\nAndroid Studio.",
+d.multiline_text((96, 510), "Edit, check and translate your Compose\nMultiplatform, Android and iOS strings\nwithout leaving Android Studio.",
                  font=helvetica(34), fill=(205, 200, 235), spacing=12)
 for i, f in enumerate([
     "Strings, plurals and arrays in every locale",
@@ -270,8 +285,9 @@ for i, f in enumerate([
     "Translate only what changed, keys optional",
     "Extract hardcoded strings with Alt+Enter",
     "Sync with Crowdin, Lokalise and POEditor",
+    "Android res and iOS String Catalogs too",
 ]):
-    y = 680 + i * 54
+    y = 712 + i * 50
     # Drawn checkmark: Helvetica has no ✓ glyph.
     d.line([(100, y + 19), (110, y + 29), (128, y + 8)], fill=(74, 222, 128), width=5, joint="curve")
     d.text((146, y + 2), f, font=helvetica(30), fill=(232, 230, 245))

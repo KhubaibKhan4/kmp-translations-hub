@@ -21,7 +21,7 @@
 
 - [x] Screenshots (2560×1600, `docs/screenshots/`) and banner (1920×1080, `docs/banner.png`), rendered from the real
       panels: `./gradlew :idea-plugin:test --tests '*ListingRender*'`, then `python3 tools/listing/make_listing.py
-      idea-plugin/build/listing docs`. Upload the seven screenshots to Marketplace.
+      idea-plugin/build/listing docs`. Upload the eight screenshots to Marketplace.
 - [ ] A 60–90 s demo video.
 - [ ] `./gradlew build :idea-plugin:verifyPlugin -Ptranslationshub.verifyRecommended=true`
 - [ ] Free early-access build: `./gradlew :idea-plugin:buildPlugin` (no product code: every Pro feature on).

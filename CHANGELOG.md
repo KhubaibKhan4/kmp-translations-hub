@@ -1,7 +1,20 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
+- Android `res` folders: every `res/values…/strings.xml` gets the Translations tab, the checks, Translate Changes,
+  sync and import/export, like `composeResources`. Colors, dimensions and themes files get no tab; `values-night` and
+  other qualifiers are variants, not languages.
+- Android's quote rules: text written to a `res` folder (typed, machine translated, imported or synced) has `'`, `"`
+  and a leading `@` escaped. An unescaped `'` is an error, since the build fails, with a quick fix; an unescaped `"`, which
+  Android drops, is a warning.
+- Nothing to translate is skipped: `@string/…` references, arrays of references, `<resources translatable="false">`
+  files and `donottranslate.xml`.
+- `R.string` in Android modules: the gutter icon on each key finds its uses in Kotlin, Java (`R.string.x`) and XML
+  (`@string/x` in layouts, menus, preferences and other strings), and the unused-key check covers `res` folders.
+- Alt+Enter in an Android module's Compose code extracts to `res/values/strings.xml` as `stringResource(R.string.…)`,
+  with the `R` import from the module's namespace; a literal `%` becomes `%%` when the string has arguments. KMP
+  modules with `composeResources` keep extracting to `Res`.
 - Xcode String Catalogs: `Localizable.xcstrings` (and any other `.xcstrings`) gets the Translations tab, with a column
   per language, plurals and comments, the checks, Translate Changes, Add Locales, and import and export. A change
   rewrites only its own lines, in Xcode's layout, so an untouched catalog stays byte for byte the same; one Undo
@@ -12,21 +25,7 @@
 - iOS placeholders (`%@`, `%lld`, `%1$@`) are checked and protected like `%1$s`. Text such as "80% is" no longer
   counts as a placeholder.
 - A machine translation keeps the default text's leading and trailing spaces (`" • %@"`), which services often trim.
-
-- Android `res` folders: every `res/values…/strings.xml` gets the Translations tab, the checks, Translate Changes,
-  sync and import/export, like `composeResources`. Colors, dimensions and themes files get no tab; `values-night` and
-  other qualifiers are variants, not languages.
-- Android's quote rules: text written to a `res` folder (typed, machine translated, imported or synced) has `'`, `"`
-  and a leading `@` escaped. An unescaped `'` is an error, since the build fails, with a quick fix; an unescaped `"`, which
-  Android drops, is a warning.
-- Nothing to translate is skipped: `@string/…` references, arrays of references, `<resources translatable="false">`
-  files and `donottranslate.xml`.
 - A machine translation that adds markup its source doesn't have (`<string name="…">`) is dropped instead of saved.
-- `R.string` in Android modules: the gutter icon on each key finds its uses in Kotlin, Java (`R.string.x`) and XML
-  (`@string/x` in layouts, menus, preferences and other strings), and the unused-key check covers `res` folders.
-- Alt+Enter in an Android module's Compose code extracts to `res/values/strings.xml` as `stringResource(R.string.…)`,
-  with the `R` import from the module's namespace; a literal `%` becomes `%%` when the string has arguments. KMP
-  modules with `composeResources` keep extracting to `Res`.
 
 ## 0.2.0
 
