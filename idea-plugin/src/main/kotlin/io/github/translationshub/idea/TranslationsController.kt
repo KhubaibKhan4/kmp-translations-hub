@@ -58,7 +58,7 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         val set = read()
         val targets = values.keys.mapNotNull { key -> targetFile(set, key, locale)?.let { key to it } }.toMap()
         command(name, targets.values.distinct()) {
-            for ((key, target) in targets) write(set, target, key, locale, values.getValue(key))
+            writeInOrder(set, targets, locale, values)
             // Machine translations start the lock file; imports only update one that exists.
             updateLock(create = origin is Origin.Machine, before = set) { lock ->
                 for (key in targets.keys) set.source(key)?.let { lock.put(key, locale, it.value, values.getValue(key), origin) }
@@ -77,7 +77,7 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         val set = read()
         val targets = values.keys.mapNotNull { key -> targetFile(set, key, locale)?.let { key to it } }.toMap()
         command("Sync ${locale.tag} translations", targets.values.distinct()) {
-            for ((key, target) in targets) write(set, target, key, locale, values.getValue(key))
+            writeInOrder(set, targets, locale, values)
             updateLock(create = true, before = set) { lock ->
                 lock.syncWith(platform)
                 for (key in targets.keys) set.source(key)?.let { lock.put(key, locale, it.value, values.getValue(key), Origin.Human) }
@@ -147,26 +147,57 @@ class TranslationsController(private val project: Project, val root: VirtualFile
         return created
     }
 
-    private fun write(set: TranslationSet, target: VirtualFile, key: ResourceKey, locale: Locale?, value: ResourceValue) {
-        require(value.kind == key.kind) { "A ${key.kind.xmlTag} can't hold a ${value.kind.xmlTag}" }
-        val file = psi(target)
-        val after = previousKeyIn(set, key, locale, target)
-        when (value) {
-            is TextValue -> StringsXmlWriter.setText(file, key.name, value.text, after)
-            is PluralsValue -> {
-                // Write the new forms first, so a missing <plurals> tag is created at the right place.
-                for ((category, text) in value.items.toSortedMap()) StringsXmlWriter.setPluralItem(file, key.name, category, text, after)
-                for (category in PluralCategory.entries - value.items.keys) StringsXmlWriter.removePluralItem(file, key.name, category)
-            }
-            is ArrayValue -> StringsXmlWriter.setArrayItems(file, key.name, value.items, after)
+    /** Writes several values of one locale in source order, each placed next to those written before it. */
+    private fun writeInOrder(set: TranslationSet, targets: Map<ResourceKey, VirtualFile>, locale: Locale, values: Map<ResourceKey, ResourceValue>) {
+        val written = mutableMapOf<ResourceKey, VirtualFile>()
+        for (key in set.keys.filter { it in targets } + targets.keys.filterNot { it in set.keys }) {
+            val target = targets.getValue(key)
+            write(set, target, key, locale, values.getValue(key), written)
+            written[key] = target
         }
     }
 
-    /** The nearest key before [key] in the source order that [target] already has, so new entries keep that order. */
-    private fun previousKeyIn(set: TranslationSet, key: ResourceKey, locale: Locale?, target: VirtualFile): ResourceKey? {
+    /** [written]: keys this command already added, by file, which count as being in their file when placing [key]. */
+    private fun write(
+        set: TranslationSet,
+        target: VirtualFile,
+        key: ResourceKey,
+        locale: Locale?,
+        value: ResourceValue,
+        written: Map<ResourceKey, VirtualFile> = emptyMap(),
+    ) {
+        require(value.kind == key.kind) { "A ${key.kind.xmlTag} can't hold a ${value.kind.xmlTag}" }
+        val file = psi(target)
+        val after = neighbourIn(set, key, locale, target, written, before = true)
+        val before = if (after == null) neighbourIn(set, key, locale, target, written, before = false) else null
+        when (value) {
+            is TextValue -> StringsXmlWriter.setText(file, key.name, value.text, after, before)
+            is PluralsValue -> {
+                // Write the new forms first, so a missing <plurals> tag is created at the right place.
+                for ((category, text) in value.items.toSortedMap()) StringsXmlWriter.setPluralItem(file, key.name, category, text, after, before)
+                for (category in PluralCategory.entries - value.items.keys) StringsXmlWriter.removePluralItem(file, key.name, category)
+            }
+            is ArrayValue -> StringsXmlWriter.setArrayItems(file, key.name, value.items, after, before)
+        }
+    }
+
+    /**
+     * The nearest key [before] (or after) [key] in the source order that [target] already has, so new entries keep
+     * that order: a key that comes before everything in the file goes before the first of them, not at the end.
+     */
+    private fun neighbourIn(
+        set: TranslationSet,
+        key: ResourceKey,
+        locale: Locale?,
+        target: VirtualFile,
+        written: Map<ResourceKey, VirtualFile>,
+        before: Boolean,
+    ): ResourceKey? {
         val index = set.keys.indexOf(key).takeIf { it >= 0 } ?: return null
-        return set.keys.subList(0, index).asReversed().firstOrNull { previous ->
-            (if (locale == null) set.sourceFile(previous) else set.translationFile(previous, locale))?.path == target.path
+        val candidates = if (before) set.keys.subList(0, index).asReversed() else set.keys.subList(index + 1, set.keys.size)
+        return candidates.firstOrNull { other ->
+            written[other]?.path == target.path ||
+                (if (locale == null) set.sourceFile(other) else set.translationFile(other, locale))?.path == target.path
         }
     }
 

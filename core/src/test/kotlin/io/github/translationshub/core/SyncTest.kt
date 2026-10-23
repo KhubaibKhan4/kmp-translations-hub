@@ -120,6 +120,27 @@ class SyncTest {
     }
 
     @Test
+    fun `a partly translated array waits, unless the rest is translated here`() {
+        val days = ResourceKey(ResourceKind.ARRAY, "days")
+        fun arraySet(german: String) = TranslationSet("/res", listOf(
+            StringsFile("/res/values/strings.xml", FolderQualifiers(null), StringsXmlParser.parse(
+                "<resources><string-array name=\"days\"><item>Today</item><item>Tomorrow</item></string-array></resources>")),
+            StringsFile("/res/values-de/strings.xml", FolderQualifiers(de), StringsXmlParser.parse("<resources>$german</resources>")),
+        ))
+        // Crowdin fills untranslated items with the default text; Lokalise and POEditor leave them empty.
+        for (partial in listOf(listOf("Today", "Morgen"), listOf("", "Morgen"))) {
+            assertEquals(emptyList(), Sync.planPull(arraySet(""), TranslationLock(), de, mapOf(days to ArrayValue(partial))))
+        }
+        val withLocal = arraySet("<string-array name=\"days\"><item>Heute</item><item>Morgen</item></string-array>")
+        val lock = TranslationLock().apply { markSynced(days, de, ArrayValue(listOf("Today", "Tomorrow")), ArrayValue(listOf("Heute", "Morgen"))) }
+        val plan = Sync.planPull(withLocal, lock, de, mapOf(days to ArrayValue(listOf("Today", "Übermorgen"))))
+        assertEquals(ArrayValue(listOf("Heute", "Übermorgen")), plan.single().remote)
+        assertEquals(Sync.Action.WRITE, plan.single().action)
+        val complete = Sync.planPull(arraySet(""), TranslationLock(), de, mapOf(days to ArrayValue(listOf("Heute", "Morgen"))))
+        assertEquals(ArrayValue(listOf("Heute", "Morgen")), complete.single().remote)
+    }
+
+    @Test
     fun `sync state belongs to one platform and survives JSON`() {
         val set = set("""<string name="hello">Hallo</string>""")
         val lock = TranslationLock().apply { syncWith("lokalise:1"); markSynced(key("hello"), de, TextValue("Hello"), TextValue("Hallo")) }

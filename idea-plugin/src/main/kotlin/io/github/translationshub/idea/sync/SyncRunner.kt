@@ -40,7 +40,8 @@ object SyncRunner {
 
     data class Options(val uploadSource: Boolean, val download: Boolean, val uploadTranslations: Boolean)
 
-    data class Conflict(val locale: Locale, val key: ResourceKey, val local: ResourceValue, val remote: ResourceValue)
+    /** [remote] is the platform's translation as it would be written here; [platform] exactly what the platform has. */
+    data class Conflict(val locale: Locale, val key: ResourceKey, val local: ResourceValue, val remote: ResourceValue, val platform: ResourceValue = remote)
 
     data class Summary(
         val fileName: String,
@@ -95,10 +96,12 @@ object SyncRunner {
             val values = remote[code]?.takeIf { it.isNotBlank() }?.let { Exchange.fromStringsXml(it, set, locale).values }.orEmpty()
             val plan = Sync.planPull(set, syncLock(), locale, values)
             val conflicted = plan.filter { it.action == Sync.Action.CONFLICT }
-            conflicted.forEach { conflicts += Conflict(locale, it.key, it.local!!, it.remote) }
-            val write = if (options.download) plan.filter { it.action == Sync.Action.WRITE }.associate { it.key to it.remote } else emptyMap()
-            val same = plan.filter { it.action == Sync.Action.SAME }.associate { it.key to it.remote }
-            apply(locale, write, write + same)
+            conflicted.forEach { conflicts += Conflict(locale, it.key, it.local!!, it.remote, it.platform) }
+            val writing = if (options.download) plan.filter { it.action == Sync.Action.WRITE } else emptyList()
+            val write = writing.associate { it.key to it.remote }
+            // The lock records what the platform has: for an array completed here, the items it lacks go up next time.
+            val synced = (writing + plan.filter { it.action == Sync.Action.SAME }).associate { it.key to it.platform }
+            apply(locale, write, synced)
             if (write.isNotEmpty()) downloaded[locale] = write.size
 
             if (options.uploadTranslations && locale in read().locales) {
@@ -202,8 +205,10 @@ object SyncRunner {
         )
         val byLocale = conflicts.groupBy { it.locale }
         when (answer) {
-            Messages.YES -> byLocale.forEach { (locale, list) -> list.associate { it.key to it.remote }.let { controller.applySynced(platform.syncKey, locale, it, it) } }
-            Messages.NO -> byLocale.forEach { (locale, list) -> controller.applySynced(platform.syncKey, locale, emptyMap(), list.associate { it.key to it.remote }) }
+            Messages.YES -> byLocale.forEach { (locale, list) ->
+                controller.applySynced(platform.syncKey, locale, list.associate { it.key to it.remote }, list.associate { it.key to it.platform })
+            }
+            Messages.NO -> byLocale.forEach { (locale, list) -> controller.applySynced(platform.syncKey, locale, emptyMap(), list.associate { it.key to it.platform }) }
         }
     }
 

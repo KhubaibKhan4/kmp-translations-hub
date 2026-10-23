@@ -136,4 +136,15 @@ class SyncRunnerTest : BasePlatformTestCase() {
         assertEquals(mapOf("bye" to "Tschüss", "cart" to "Wagen"), poeditor.strings["de"])
         assertEquals("poeditor:9", controller.lock().syncedWith)
     }
+
+    fun `test new translations keep the default file's order`() {
+        fun add(folder: String, body: String): VirtualFile = myFixture.addFileToProject(
+            "shop/src/commonMain/composeResources/$folder/strings.xml", "<resources>\n$body</resources>\n").virtualFile
+        add("values", listOf("first", "anchor", "middle", "last").joinToString("") { "    <string name=\"$it\">$it</string>\n" })
+        val de = add("values-de", "    <string name=\"anchor\">Anker</string>\n")
+        val shop = TranslationsController(project, de.parent.parent)
+        shop.applySynced("fake:1", this.de, listOf("last", "first", "middle").associate { key(it) to TextValue(it.uppercase()) }, emptyMap())
+        val names = Regex("name=\"(\\w+)\"").findAll(com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().getDocument(de)!!.text).map { it.groupValues[1] }.toList()
+        assertEquals(listOf("first", "anchor", "middle", "last"), names)
+    }
 }

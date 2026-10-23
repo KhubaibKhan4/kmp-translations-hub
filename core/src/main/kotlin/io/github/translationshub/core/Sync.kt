@@ -25,7 +25,11 @@ object Sync {
         CONFLICT,
     }
 
-    data class PullItem(val key: ResourceKey, val local: ResourceValue?, val remote: ResourceValue, val action: Action)
+    /**
+     * [remote] is what would be written here; [platform] what the platform has, which differs only for an array
+     * completed with items translated here, and is what the lock file records as synced.
+     */
+    data class PullItem(val key: ResourceKey, val local: ResourceValue?, val remote: ResourceValue, val action: Action, val platform: ResourceValue = remote)
 
     /**
      * What to do with the platform's translations [remote] for [locale]. Keys the default values don't have, or
@@ -33,17 +37,34 @@ object Sync {
      */
     fun planPull(set: TranslationSet, lock: TranslationLock, locale: Locale, remote: Map<ResourceKey, ResourceValue>): List<PullItem> =
         set.keys.mapNotNull { key ->
-            val value = remote[key]?.takeIf { v -> v.texts.any { it.isNotBlank() } } ?: return@mapNotNull null
-            if (set.source(key)?.translatable != true) return@mapNotNull null
+            val source = set.source(key)?.takeIf { it.translatable } ?: return@mapNotNull null
             val local = set.translation(key, locale)?.value
-            PullItem(key, local, value, action(local, value, lock.record(key, locale), lock.status(set, key, locale)))
+            val platform = remote[key]?.takeIf { v -> v.texts.any { it.isNotBlank() } } ?: return@mapNotNull null
+            val value = completeArray(platform, source.value, local) ?: return@mapNotNull null
+            PullItem(key, local, value, action(local, value, platform, lock.record(key, locale), lock.status(set, key, locale)), platform)
         }
 
-    private fun action(local: ResourceValue?, remote: ResourceValue, record: TranslationLock.Record?, status: TranslationStatus): Action {
+    /**
+     * An array comes as a whole even when only some items are translated: platforms fill the rest with the default
+     * text (Crowdin) or leave them empty (Lokalise, POEditor). Such items are taken from the translation here when it
+     * has them; otherwise the array isn't ready, and null leaves it for a later sync, as platforms do with a plural
+     * that lacks forms. Other values pass through.
+     */
+    private fun completeArray(remote: ResourceValue, source: ResourceValue, local: ResourceValue?): ResourceValue? {
+        if (remote !is ArrayValue || source !is ArrayValue) return remote
+        val localItems = (local as? ArrayValue)?.items.orEmpty()
+        val items = source.items.indices.map { i ->
+            val text = remote.items.getOrNull(i)
+            if (text.isNullOrBlank() || text == source.items[i]) localItems.getOrNull(i)?.takeIf { it.isNotBlank() } ?: return null else text
+        }
+        return ArrayValue(items)
+    }
+
+    private fun action(local: ResourceValue?, remote: ResourceValue, platform: ResourceValue, record: TranslationLock.Record?, status: TranslationStatus): Action {
         if (local == null) return Action.WRITE
         val localHash = TranslationLock.hash(local)
-        val remoteHash = TranslationLock.hash(remote)
-        if (localHash == remoteHash) return Action.SAME
+        if (localHash == TranslationLock.hash(remote)) return Action.SAME
+        val remoteHash = TranslationLock.hash(platform)
         val synced = record?.syncedHash
         return when {
             // Never synced: a machine translation gives way to a translator's; a person's is a conflict.
