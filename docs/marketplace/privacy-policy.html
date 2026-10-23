@@ -6,8 +6,8 @@
 <h3>What the plugin does on your computer</h3>
 <ul>
   <li><b>Your project's strings.</b> The plugin reads and edits the <code>composeResources/values…</code> XML files of the project you open, and reads its Kotlin files to find <code>Res.string…</code> uses (for navigation and the unused-key check). Nothing is uploaded, except as described under Translation services and Translation platforms.</li>
-  <li><b><code>translations.lock.json</code>.</b> When strings are first machine translated or synced, the plugin writes this file next to the <code>composeResources</code> folder. It holds short hashes of texts (not the texts themselves), and which service or "human" wrote each translation. It stays in your project; you decide whether to commit it.</li>
-  <li><b>Settings.</b> Your chosen service, the language of the default values folder, the Claude and OpenAI model names and the optional MyMemory email are stored in the IDE's settings on your computer (<code>kmp-translations-hub.xml</code>). The translation platform, its project ID and the Crowdin Enterprise organization are stored in the project's <code>.idea</code> folder (<code>kmp-translations-hub.xml</code>).</li>
+  <li><b><code>translations.lock.json</code>.</b> When strings are first machine translated or synced, the plugin writes this file next to the <code>composeResources</code> folder. It holds short hashes of texts (not the texts themselves), which service or "human" wrote each translation, and, once you sync, the platform and project ID you synced with (such as <code>crowdin:123456</code>). It stays in your project; you decide whether to commit it.</li>
+  <li><b>Settings.</b> Your chosen service, the language of the default values folder, the Claude and OpenAI model names and the optional MyMemory email are stored in the IDE's settings on your computer (<code>kmp-translations-hub.xml</code>), with a count of Translate Changes runs and whether the rating request was shown. The translation platform to sync with, a project ID for each platform and the Crowdin Enterprise organization are stored in the project's <code>.idea</code> folder (<code>kmp-translations-hub.xml</code>).</li>
   <li><b>API keys.</b> DeepL, Google Cloud, Anthropic and OpenAI keys, and Crowdin, Lokalise and POEditor tokens, are stored in the IDE's password safe (on macOS the Keychain by default, or KeePass, as set in the IDE), never in a settings or project file.</li>
   <li><b>Apple translation helper.</b> On macOS the plugin copies its small <code>translationshub-apple</code> program into the IDE's system folder and runs it to use Apple's on-device Translation framework.</li>
   <li><b>Files you create.</b> Imports read, and exports write, only the files and folders you pick.</li>
@@ -38,7 +38,7 @@
 <h3>Licensing and purchases</h3>
 <p>If you start a trial or buy a Pro license, JetBrains handles it through JetBrains Marketplace and your JetBrains Account, under <a href="https://www.jetbrains.com/legal/docs/privacy/privacy/">JetBrains' privacy policy</a>. The plugin only asks the IDE whether a license is present and checks JetBrains' signature on it locally. It never sees your payment or account details.</p>
 <h3>Third parties</h3>
-<p>Apart from the translation service and translation platform you choose, the plugin sends nothing to third parties. "Start Free Trial" and "Get KMP Device Hub" open JetBrains' website in your browser.</p>
+<p>Apart from the translation service and translation platform you choose, the plugin sends nothing to third parties. "Start Free Trial", "Get KMP Device Hub" and the one-time rating request's "Rate it" open JetBrains' website in your browser.</p>
 <h3>Children</h3>
 <p>The plugin is a developer tool and isn't directed at children.</p>
 <h3>Changes</h3>

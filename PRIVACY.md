@@ -19,14 +19,17 @@ platform you set up** (Crowdin, Lokalise or POEditor). Nowhere else.
   uploaded, except as described under [Translation services](#translation-services) and
   [Translation platforms](#translation-platforms).
 - **`translations.lock.json`.** When strings are first machine translated or synced, the plugin writes this file next
-  to the `composeResources` folder. It holds short hashes of texts (not the texts themselves), and which service or "human"
-  wrote each translation. It stays in your project; you decide whether to commit it.
+  to the `composeResources` folder. It holds short hashes of texts (not the texts themselves), which service or "human"
+  wrote each translation, and, once you sync, the platform and project ID you synced with (such as `crowdin:123456`).
+  It stays in your project; you decide whether to commit it.
 - **Settings.** Your chosen service, the language of the default values folder, the Claude and OpenAI model names and
-  the optional MyMemory email are stored in the IDE's settings on your computer (`kmp-translations-hub.xml`). The
-  translation platform, its project ID and the Crowdin Enterprise organization are stored in the project's `.idea`
-  folder (`kmp-translations-hub.xml`).
-- **API keys.** DeepL, Google Cloud, Anthropic and OpenAI keys, and Crowdin, Lokalise and POEditor tokens, are stored in the IDE's password safe (on macOS the
-  Keychain by default, or KeePass, as set in the IDE), never in a settings or project file.
+  the optional MyMemory email are stored in the IDE's settings on your computer (`kmp-translations-hub.xml`), with a
+  count of Translate Changes runs and whether the rating request was shown. The translation platform to sync with, a
+  project ID for each platform and the Crowdin Enterprise organization are stored in the project's `.idea` folder
+  (`kmp-translations-hub.xml`).
+- **API keys.** DeepL, Google Cloud, Anthropic and OpenAI keys, and Crowdin, Lokalise and POEditor tokens, are stored
+  in the IDE's password safe (on macOS the Keychain by default, or KeePass, as set in the IDE), never in a settings or
+  project file.
 - **Apple translation helper.** On macOS the plugin copies its small `translationshub-apple` program into the IDE's
   system folder and runs it to use Apple's on-device Translation framework.
 - **Files you create.** Imports read, and exports write, only the files and folders you pick.
@@ -82,8 +85,9 @@ account details.
 
 ## Third parties
 
-Apart from the translation service and translation platform you choose, the plugin sends nothing to third parties. "Start Free Trial" and "Get
-KMP Device Hub" open JetBrains' website in your browser.
+Apart from the translation service and translation platform you choose, the plugin sends nothing to third parties.
+"Start Free Trial", "Get KMP Device Hub" and the one-time rating request's "Rate it" open JetBrains' website in your
+browser.
 
 ## Children
 
