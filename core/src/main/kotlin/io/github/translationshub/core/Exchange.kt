@@ -119,9 +119,9 @@ object Exchange {
             if (entry == null) continue
             if (locale == null) entry.comment?.let { append("    <!-- ").append(it.replace("--", "- -")).append(" -->\n") }
             when (val value = entry.value) {
-                is TextValue -> append("    <string name=\"").append(key.name).append("\">").append(xmlText(value.text)).append("</string>\n")
+                is TextValue -> append("    <string name=\"").append(xml(key.name)).append("\">").append(xmlText(value.text)).append("</string>\n")
                 is PluralsValue -> {
-                    append("    <plurals name=\"").append(key.name).append("\">\n")
+                    append("    <plurals name=\"").append(xml(key.name)).append("\">\n")
                     for ((category, text) in value.items.toSortedMap()) {
                         append("        <item quantity=\"").append(category.xmlName).append("\">").append(xmlText(text)).append("</item>\n")
                     }
@@ -129,10 +129,10 @@ object Exchange {
                 }
                 is ArrayValue -> if (arraysAsStrings) {
                     value.items.forEachIndexed { i, text ->
-                        append("    <string name=\"").append(key.name).append('[').append(i).append("]\">").append(xmlText(text)).append("</string>\n")
+                        append("    <string name=\"").append(xml(key.name)).append('[').append(i).append("]\">").append(xmlText(text)).append("</string>\n")
                     }
                 } else {
-                    append("    <string-array name=\"").append(key.name).append("\">\n")
+                    append("    <string-array name=\"").append(xml(key.name)).append("\">\n")
                     for (text in value.items) append("        <item>").append(xmlText(text)).append("</item>\n")
                     append("    </string-array>\n")
                 }

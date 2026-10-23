@@ -1,0 +1,6 @@
+<!-- Loaded when the IDE has JSON support (Android Studio and IntelliJ IDEA bundle it): Xcode String Catalogs are JSON. -->
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="JSON" extensions="xcstrings"/>
+    </extensions>
+</idea-plugin>

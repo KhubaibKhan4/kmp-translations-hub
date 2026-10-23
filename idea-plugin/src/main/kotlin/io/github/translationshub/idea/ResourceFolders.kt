@@ -8,21 +8,33 @@ import io.github.translationshub.core.ResourceFormat
 import io.github.translationshub.core.StringsFile
 import io.github.translationshub.core.StringsXmlParser
 import io.github.translationshub.core.TranslationSet
+import io.github.translationshub.core.XcStrings
 
 /** Finds `composeResources` and Android `res` folders and reads them, including unsaved edits in open editors. */
 object ResourceFolders {
 
     const val ROOT_NAME = "composeResources"
 
-    /** The `composeResources` or `res` folder of an XML file in a `values…` folder, or null if [file] isn't one. */
+    /**
+     * The `composeResources` or `res` folder of an XML file in a `values…` folder; a String Catalog is its own root.
+     * Null if [file] is neither.
+     */
     fun rootOf(file: VirtualFile): VirtualFile? {
+        if (isCatalog(file)) return file
         if (file.isDirectory || file.extension != "xml") return null
         val folder = file.parent ?: return null
         val root = folder.parent ?: return null
         return root.takeIf { ResourceFormat.ofRoot(it.name) != null && FolderQualifiers.parse(folder.name) != null }
     }
 
-    fun format(root: VirtualFile): ResourceFormat = ResourceFormat.ofRoot(root.name) ?: ResourceFormat.COMPOSE
+    fun format(root: VirtualFile): ResourceFormat =
+        if (isCatalog(root)) ResourceFormat.IOS else ResourceFormat.ofRoot(root.name) ?: ResourceFormat.COMPOSE
+
+    /** An Xcode String Catalog, `Localizable.xcstrings` or another. */
+    fun isCatalog(file: VirtualFile) = !file.isDirectory && file.extension == XcStrings.EXTENSION
+
+    /** The files [root]'s strings are in: its `values…` XML files, or the catalog itself. */
+    fun files(root: VirtualFile): List<VirtualFile> = if (isCatalog(root)) listOf(root) else xmlFiles(root)
 
     /**
      * Whether [file] holds strings, plurals or arrays. An Android `values` folder also has colors, dimensions and
@@ -45,6 +57,10 @@ object ResourceFolders {
     /** Reads every values file of [root]; files open in an editor are read from their document, unsaved text included. */
     fun read(root: VirtualFile): TranslationSet {
         val documents = FileDocumentManager.getInstance()
+        if (isCatalog(root)) {
+            val text = documents.getCachedDocument(root)?.text ?: String(root.contentsToByteArray(), Charsets.UTF_8)
+            return runCatching { XcStrings.parse(text) }.getOrElse { XcStrings.parse("") }.toSet(root.path)
+        }
         val format = format(root)
         val files = xmlFiles(root).mapNotNull { file ->
             val qualifiers = FolderQualifiers.parse(file.parent.name) ?: return@mapNotNull null

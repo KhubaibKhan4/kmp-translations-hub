@@ -22,11 +22,11 @@ object Protection {
         RAW_PLACEHOLDERS,
     }
 
-    private val placeholder = Regex("""%(?:\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?[sdfxXoeEgGc]""")
+    private val placeholder = Regex(Placeholders.PATTERN)
 
     data class Protected(val text: String, val tokens: List<String>)
 
-    private val protectedParts = Regex("""%(?:\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?[sdfxXoeEgGc]|</?[A-Za-z][\w:.-]*(?:\s+[\w:.-]+\s*=\s*"[^"<]*")*\s*/?>|\\(?:u[0-9a-fA-F]{4}|.)""")
+    private val protectedParts = Regex(Placeholders.PATTERN + """|</?[A-Za-z][\w:.-]*(?:\s+[\w:.-]+\s*=\s*"[^"<]*")*\s*/?>|\\(?:u[0-9a-fA-F]{4}|.)""")
 
     fun protect(text: String, style: Style): Protected {
         val tokens = mutableListOf<String>()

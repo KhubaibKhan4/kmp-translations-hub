@@ -76,6 +76,8 @@ object ResourceUsages {
     private fun patterns(format: ResourceFormat): Map<Set<String>, Regex> = when (format) {
         ResourceFormat.COMPOSE -> mapOf(setOf("kt") to accessor)
         ResourceFormat.ANDROID -> mapOf(setOf("kt", "java") to androidAccessor, setOf("xml") to androidReference)
+        // Swift refers to a catalog's strings by their text; not searched yet.
+        ResourceFormat.IOS -> emptyMap()
     }
 
     /** Every key [text] uses, for a file with [extension]. */
