@@ -10,7 +10,11 @@ import io.github.translationshub.core.Locale
 import io.github.translationshub.core.ResourceKey
 import io.github.translationshub.core.ResourceKind
 import io.github.translationshub.core.TextValue
+import io.github.translationshub.core.Sync
 import io.github.translationshub.idea.kotlin.HardcodedComposeTextInspection
+import io.github.translationshub.idea.sync.SyncDialog
+import io.github.translationshub.idea.sync.SyncSettings
+import io.github.translationshub.idea.sync.SyncSettingsConfigurable
 import io.github.translationshub.idea.translate.TranslateDialog
 import io.github.translationshub.idea.translate.TranslationSettingsConfigurable
 import java.awt.Component
@@ -262,6 +266,12 @@ class ListingRenderTest : BasePlatformTestCase() {
         render(dialog.form().apply { border = com.intellij.util.ui.JBUI.Borders.empty(16) }, 720, 350, "translate-dialog$suffix")
 
         render(TranslationSettingsConfigurable().createComponent(), 880, 560, "settings$suffix")
+
+        val sync = SyncDialog(project, "Crowdin", Sync.remoteFileName(strings))
+        Disposer.register(testRootDisposable, sync.disposable)
+        render(sync.form().apply { border = com.intellij.util.ui.JBUI.Borders.empty(16) }, 620, 250, "sync-dialog$suffix")
+        SyncSettings.getInstance(project).state.apply { platform = "crowdin"; crowdinProjectId = "123456" }
+        render(SyncSettingsConfigurable(project).createComponent().apply { border = com.intellij.util.ui.JBUI.Borders.empty(16) }, 900, 680, "sync-settings$suffix")
 
         val addLocales = AddLocalesDialog(project, editor.model.set.locales)
         Disposer.register(testRootDisposable, addLocales.disposable)
