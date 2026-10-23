@@ -3,10 +3,16 @@
     <name>KMP Translations Hub</name>
     <vendor>Khubaib Khan</vendor>
     <description><![CDATA[
-    <p><b>Every translation of your Compose Multiplatform app in one table, and only what changed gets translated.</b></p>
+    <p><b>Every translation of your Compose Multiplatform, Android and iOS app in one table, and only what changed gets translated.</b></p>
     <ul>
-      <li>A <b>Translations</b> tab on every <code>composeResources/values…</code> XML file: all keys of the module
-          against all locales, with search and filters for missing, problem and outdated translations.</li>
+      <li>A <b>Translations</b> tab on every <code>composeResources/values…</code> and Android <code>res/values…</code>
+          strings file, and on Xcode String Catalogs (<code>Localizable.xcstrings</code>): all keys against all locales,
+          with search and filters for missing, problem and outdated translations.</li>
+      <li><b>Android</b>: text written the way Android's resource compiler wants it, an error with a quick fix for an
+          unescaped apostrophe, <code>R.string</code> uses in Kotlin, Java and XML, and extraction to
+          <code>stringResource(R.string…)</code>.</li>
+      <li><b>iOS</b>: a column per language of a String Catalog, plurals included. A change rewrites only its own
+          lines, in Xcode's layout; <code>%@</code> and <code>%lld</code> are checked and protected.</li>
       <li>Strings, plurals and string-arrays. Edits keep your files' formatting and comments; each is one Undo.</li>
       <li>Add, rename and delete keys in every locale at once; add a locale.</li>
       <li>Checks for missing translations, placeholders that don't match the default text, array sizes and keys left

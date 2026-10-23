@@ -63,8 +63,15 @@ dependencies {
 /** The newest section of CHANGELOG.md as HTML, for the Marketplace "What's New" tab. */
 val changeNotesHtml = providers.fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md")).asText.map { md ->
     val section = md.substringAfter("\n## ").substringAfter("\n").substringBefore("\n## ").trim()
-    val items = section.lines().filter { it.startsWith("- ") }.joinToString("") { "<li>${it.removePrefix("- ")}</li>" }
-    "<ul>$items</ul>"
+    // A bullet goes on over its indented lines; text is HTML-escaped and `code` becomes <code>.
+    val bullets = mutableListOf<String>()
+    for (line in section.lines()) when {
+        line.startsWith("- ") -> bullets += line.removePrefix("- ").trim()
+        line.isNotBlank() && bullets.isNotEmpty() -> bullets[bullets.size - 1] += " " + line.trim()
+    }
+    fun html(text: String) = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        .replace(Regex("`([^`]+)`"), "<code>$1</code>")
+    "<ul>" + bullets.joinToString("") { "<li>${html(it)}</li>" } + "</ul>"
 }
 
 intellijPlatform {

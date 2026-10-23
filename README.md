@@ -1,12 +1,13 @@
 <div align="center">
 
-<img src="docs/banner.png" alt="KMP Translations Hub: every locale of your Compose Multiplatform app in one table" width="900">
+<img src="docs/banner.png" alt="KMP Translations Hub: every locale of your Compose Multiplatform, Android and iOS app in one table" width="900">
 
 # KMP Translations Hub
 
-**Every locale of your Compose Multiplatform app in one table, and only what changed gets translated.**
+**Every locale of your Compose Multiplatform, Android and iOS app in one table, and only what changed gets translated.**
 
-For Kotlin Multiplatform and Compose Multiplatform developers who keep their strings in `composeResources`.
+For Kotlin Multiplatform, Compose Multiplatform and Android developers: strings in `composeResources`, Android `res`
+folders and Xcode String Catalogs.
 
 <a href="https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub"><img src="https://img.shields.io/badge/Get%20from-JetBrains%20Marketplace-000000?style=for-the-badge&logo=jetbrains" alt="Get from JetBrains Marketplace" height="36"></a>
 
@@ -15,6 +16,8 @@ For Kotlin Multiplatform and Compose Multiplatform developers who keep their str
 [![Rating](https://img.shields.io/jetbrains/plugin/r/rating/35376?color=3DDC84)](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews)
 ![Android Studio & IntelliJ IDEA 2025.1+](https://img.shields.io/badge/Android%20Studio%20%26%20IntelliJ-2025.1%2B-7F52FF)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-composeResources-1E88E5)
+![Android](https://img.shields.io/badge/Android-res%2Fvalues-3DDC84)
+![iOS](https://img.shields.io/badge/iOS-String%20Catalogs-000000)
 [![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/Y8Y2YABZ7)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/khubaibkhan)
 
@@ -30,7 +33,8 @@ In Android Studio or IntelliJ IDEA (2025.1 or newer): **Settings → Plugins →
 **KMP Translations Hub** and install it, or use the button above:
 [plugins.jetbrains.com/plugin/35376-kmp-translations-hub](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub).
 
-Then open any `composeResources/values…/strings.xml` and switch to the **Translations** tab at the bottom of the editor.
+Then open any `composeResources/values…/strings.xml`, Android `res/values…/strings.xml` or `Localizable.xcstrings` and
+switch to the **Translations** tab at the bottom of the editor.
 
 <details>
 <summary>Build it from source instead</summary>
@@ -126,6 +130,26 @@ when modules share key names.
 
 <img src="docs/screenshots/07-sync.png" alt="Translation Platform settings and the Sync with Crowdin dialog" width="900">
 
+### Android and iOS strings too
+
+The same table, checks and Translate Changes work on Android `res/values…/strings.xml` and on Xcode String Catalogs,
+so a KMP app with native screens, or an Android app on its own, gets everything above.
+
+**Android `res`:** colors, dimensions and themes files are left out, and `values-night` and the like are variants, not
+languages. Text is written the way Android's resource compiler wants it: `'`, `"` and a leading `@` are escaped, and
+an unescaped `'`, which fails the build, is an error with a quick fix. `@string/…` references, `translatable="false"`
+files and `donottranslate.xml` aren't translated. The gutter icon finds a key's uses in Kotlin, Java (`R.string.x`) and
+XML (`@string/x`), the unused-key check covers them, and Alt+Enter in an Android module's Compose code extracts to
+`stringResource(R.string.…)`.
+
+**iOS String Catalogs:** `Localizable.xcstrings` gets a column per language, with plurals and comments. A change rewrites
+only its own lines, in Xcode's layout, so a catalog the plugin didn't touch stays byte for byte the same. Xcode's `new`
+strings count as missing; `%@` and `%lld` are checked and protected like `%1$s`. Strings Xcode marks
+`shouldTranslate: false` or stale, and strings with device variations, are left as they are. Sync with translation
+platforms works with `composeResources` and `res` for now.
+
+<img src="docs/screenshots/08-android-ios.png" alt="An Android res folder with an unescaped apostrophe, and an Xcode String Catalog, in the Translations tab" width="900">
+
 ### Import, export and Run in this locale
 
 Export CSV (all locales), XLIFF 1.2 or Android `strings.xml` for translators, and import them back: plural forms and
@@ -135,8 +159,9 @@ relaunches your app in that column's language on an Android device or iOS simula
 
 ## Free, supported by donations
 
-Every feature is free: the Translations tab, the checks, Translate Changes with every service, string extraction,
-sync with Crowdin, Lokalise and POEditor, import and export, and Run in this locale with KMP Device Hub.
+Every feature is free: the Translations tab for Compose Multiplatform, Android and iOS, the checks, Translate Changes
+with every service, string extraction, sync with Crowdin, Lokalise and POEditor, import and export, and Run in this
+locale with KMP Device Hub.
 
 If it saves you time, you can support its development on [Ko-fi](https://ko-fi.com/Y8Y2YABZ7) or [Buy Me a Coffee](https://www.buymeacoffee.com/khubaibkhan). A rating
 or review on the [Marketplace page](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews) helps a
@@ -144,8 +169,8 @@ lot too.
 
 ## How translating only what changed works
 
-`translations.lock.json` sits next to each `composeResources` folder (outside what the resource compiler reads) and
-is committed with it. For each translation it stores a hash of the default text it was made from, a hash of its own
+`translations.lock.json` sits next to each `composeResources` or `res` folder (outside what the resource compiler
+reads), and `Localizable.translations.lock.json` next to a String Catalog, and is committed with it. For each translation it stores a hash of the default text it was made from, a hash of its own
 text, and who wrote it (`deepl`, `apple`, `mymemory`, `claude`… or `human`):
 
 | State | What Translate Changes does |

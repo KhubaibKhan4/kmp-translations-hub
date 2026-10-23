@@ -303,6 +303,73 @@ class ListingRenderTest : BasePlatformTestCase() {
         render(myFixture.editor.component, 1000, 340, "extract-after$suffix")
     }
 
+    /** The same shop app as an Android `res` folder and as an Xcode String Catalog, for the Android and iOS shots. */
+    private fun renderPlatforms() {
+        fun res(folder: String, body: String) = myFixture.addFileToProject(
+            "android/src/main/res/$folder/strings.xml", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n$body</resources>\n").virtualFile
+        val strings = res("values", """
+            |    <string name="app_name" translatable="false">Shopwise</string>
+            |    <string name="title">@string/app_name</string>
+            |    <string name="tab_home">Home</string>
+            |    <string name="tab_orders">Orders</string>
+            |    <string name="offline_title">You\'re offline</string>
+            |    <string name="checkout_total">Total: %1${'$'}s</string>
+            |    <plurals name="cart_items">
+            |        <item quantity="one">%d item</item>
+            |        <item quantity="other">%d items</item>
+            |    </plurals>
+            |    <string name="sign_out">Sign out</string>
+            |""".trimMargin() + "\n")
+        res("values-de", "    <string name=\"tab_home\">Start</string>\n    <string name=\"tab_orders\">Bestellungen</string>\n" +
+            "    <string name=\"offline_title\">Du bist offline</string>\n    <string name=\"checkout_total\">Gesamt: %1${'$'}s</string>\n" +
+            "    <string name=\"sign_out\">Abmelden</string>\n")
+        val french = res("values-fr", "    <string name=\"tab_home\">Accueil</string>\n    <string name=\"tab_orders\">Commandes</string>\n" +
+            "    <string name=\"offline_title\">Vous n'êtes pas connecté</string>\n    <string name=\"checkout_total\">Total : %1${'$'}s</string>\n")
+        res("values-ja", "    <string name=\"tab_home\">ホーム</string>\n    <string name=\"tab_orders\">注文</string>\n")
+        res("values-night", "")
+        // The app's code uses its strings, so only the real problem (the French apostrophe) shows.
+        myFixture.addFileToProject("android/src/main/java/shop/Main.kt",
+            "package shop\nval keys = listOf(R.string.tab_home, R.string.tab_orders, R.string.offline_title, R.string.checkout_total, " +
+                "R.string.sign_out, R.string.title, R.plurals.cart_items)\n")
+        val android = editor(strings)
+        android.reload()
+        android.select(Cell(key("offline_title"), Locale("fr")))
+        showLikeAWindow(android)
+        render(android.component, 1600, 420, "android-table")
+
+        myFixture.enableInspections(TranslationsInspection())
+        myFixture.configureFromExistingVirtualFile(french)
+        myFixture.doHighlighting()
+        (myFixture.editor as EditorEx).apply { settings.isLineNumbersShown = true }
+        render(myFixture.editor.component, 1100, 260, "android-inspection")
+
+        val catalog = io.github.translationshub.core.XcStrings.parse("")
+        val rows = listOf(
+            "Home" to mapOf("de" to "Start", "fr" to "Accueil", "ja" to "ホーム"),
+            "Orders" to mapOf("de" to "Bestellungen", "fr" to "Commandes", "ja" to "注文"),
+            "Hello, %@!" to mapOf("de" to "Hallo, %@!", "fr" to "Bonjour, %@ !"),
+            "Total: %@" to mapOf("de" to "Gesamt: %@", "fr" to "Total : %@", "ja" to "合計：%@"),
+            "You're offline" to mapOf("de" to "Du bist offline"),
+            "Sign out" to mapOf("de" to "Abmelden", "ja" to "ログアウト"),
+        )
+        for ((text, translations) in rows) {
+            catalog.add(text, TextValue(text))
+            translations.forEach { (tag, value) -> catalog.set(text, Locale.fromTag(tag), TextValue(value)) }
+        }
+        catalog.add("%lld items", io.github.translationshub.core.PluralsValue(mapOf(
+            io.github.translationshub.core.PluralCategory.ONE to "%lld item", io.github.translationshub.core.PluralCategory.OTHER to "%lld items")))
+        catalog.set("%lld items", Locale("de"), io.github.translationshub.core.PluralsValue(mapOf(
+            io.github.translationshub.core.PluralCategory.ONE to "%lld Artikel", io.github.translationshub.core.PluralCategory.OTHER to "%lld Artikel")))
+        // Xcode's new strings for a language it hasn't translated: they show as missing.
+        catalog.addLocale(Locale("ja"))
+        val file = myFixture.addFileToProject("iosApp/iosApp/Localizable.xcstrings", catalog.toJson()).virtualFile
+        val ios = editor(file)
+        ios.reload()
+        ios.select(Cell(key("Hello, %@!"), Locale("fr")))
+        showLikeAWindow(ios)
+        render(ios.component, 1600, 420, "catalog-table")
+    }
+
     fun `test render listing panels`() {
         // Marketing images only; not worth CI time or memory.
         if (System.getenv("CI") != null) return
@@ -314,6 +381,7 @@ class ListingRenderTest : BasePlatformTestCase() {
 
         val source = project()
         renderAll(source, "")
+        renderPlatforms()
         val laf = LafManager.getInstance()
         val dark = laf.installedThemes.firstOrNull { it.isDark }
         if (dark != null) {
