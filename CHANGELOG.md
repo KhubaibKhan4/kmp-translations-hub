@@ -1,12 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
 
-- Pro: Sync with Crowdin, Lokalise and POEditor from the Translations tab. It uploads the default strings, downloads
-  your translators' work (plurals and arrays included), and uploads translations made in the IDE that the platform
-  doesn't have. `translations.lock.json` remembers each translation at the last sync: a change on one side wins, a
-  change on both sides is kept as it is in the IDE until you choose. Set it up in Settings → Tools → KMP Translations
-  Hub → Translation Platform.
+- Pro: Sync with Crowdin, Lokalise and POEditor, from the Translations tab. It uploads the default strings, downloads
+  your translators' work into `composeResources`, and uploads translations made in the IDE that the platform doesn't
+  have yet. Plurals, arrays, placeholders and escapes go both ways as Compose expects them.
+- Nothing is overwritten silently: `translations.lock.json` remembers each translation at the last sync. A change on
+  one side wins; a change on both sides is kept as it is in the IDE until you pick the platform's or your own.
+- Set it up in Settings → Tools → KMP Translations Hub → Translation Platform, with a project ID and token for each
+  platform. Tokens are kept in the IDE's password safe.
+- Imported `strings.xml` files written in Android's quoted style (`"It's here"`) are read the way Compose shows them.
+- New translations, from Translate Changes, Import or Sync, go next to the keys they follow in the default file,
+  instead of at the end.
 - After the third Translate Changes that translates something, a one-time notification asks for a rating on JetBrains
   Marketplace. It never shows again.
 

@@ -211,6 +211,18 @@ screenshot("06-services.png", "Bring your own key, or none",
            centered(window(render("settings"), "Settings · Tools · KMP Translations Hub"), top=400))
 
 
+def sync_place(canvas):
+    settings = fit(window(render("sync-settings", (0, 0, 0.9, 1)), "Settings · Translation Platform"), 1300, 1080)
+    dialog = fit(window(render("sync-dialog", (0, 0.18, 0.82, 0.8)), "Sync with Crowdin"), 2560 - 140 * 2 - settings.size[0] - 70, 600)
+    card(canvas, settings, (140, 380))
+    card(canvas, dialog, (W - 140 - dialog.size[0], 380 + (settings.size[1] - dialog.size[1]) // 2))
+
+
+screenshot("07-sync.png", "Sync with Crowdin, Lokalise and POEditor",
+           "Default strings up, translators' work down. Changed on both sides? Nothing is overwritten.",
+           sync_place)
+
+
 # ---- Banner -------------------------------------------------------------------------------------------------
 
 BW, BH = 1920, 1080
@@ -257,17 +269,18 @@ for i, f in enumerate([
     "Placeholder and plural checks per language",
     "Translate only what changed, keys optional",
     "Extract hardcoded strings with Alt+Enter",
+    "Sync with Crowdin, Lokalise and POEditor",
 ]):
-    y = 700 + i * 54
+    y = 680 + i * 54
     # Drawn checkmark: Helvetica has no ✓ glyph.
     d.line([(100, y + 19), (110, y + 29), (128, y + 8)], fill=(74, 222, 128), width=5, joint="curve")
     d.text((146, y + 2), f, font=helvetica(30), fill=(232, 230, 245))
 
 table = fit(window(render("plurals", (0, 0, 0.72, 1)), "strings.xml · Translations", bar=40, dark=True), 860, 520)
 side = fit(window(render("plurals", SIDE), "Polish plurals", bar=40, dark=True), 400, 320)
-extract = fit(window(render("extract-after", (0, 0.325, 0.68, 0.73)), "Alt+Enter: Extract to composeResources", bar=40, dark=True), 700, 300)
+sync = fit(window(render("sync-dialog", (0, 0.18, 0.82, 0.8)), "Sync with Crowdin", bar=40, dark=True), 640, 320)
 card(banner, table, (980, 110), r=14, shadow=36, glow=(127, 82, 255, 110))
-card(banner, extract, (980, 700), r=14, shadow=36, glow=(30, 136, 229, 90))
+card(banner, sync, (980, 700), r=14, shadow=36, glow=(30, 136, 229, 90))
 card(banner, side, (1460, 470), r=14, shadow=36, glow=(127, 82, 255, 130))
 banner.convert("RGB").save(OUT / "banner.png", optimize=True)
 print("wrote", OUT / "banner.png")

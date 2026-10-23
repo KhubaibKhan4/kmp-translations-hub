@@ -228,6 +228,8 @@ internal class SyncDialog(project: Project, private val platformName: String, pr
 
     fun options() = SyncRunner.Options(uploadSource.isSelected, download.isSelected, uploadTranslations.isSelected)
 
+    internal fun form(): JComponent = createCenterPanel()
+
     override fun createCenterPanel(): JComponent = FormBuilder.createFormBuilder()
         .addComponent(uploadSource)
         .addComponent(download)

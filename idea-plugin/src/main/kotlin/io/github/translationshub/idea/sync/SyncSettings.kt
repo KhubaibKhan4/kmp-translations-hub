@@ -158,7 +158,7 @@ class SyncSettingsConfigurable(project: Project) : Configurable {
                 .addComponentToRightColumn(hint("${kind.idHint} For example ${kind.idExample}."))
             if (kind == SyncSettings.Platform.CROWDIN) {
                 form.addLabeledComponent("Crowdin Enterprise organization:", organization)
-                    .addComponentToRightColumn(hint("Only for Crowdin Enterprise: the name in https://<organization>.crowdin.com. Leave empty for crowdin.com."))
+                    .addComponentToRightColumn(hint("Only for Crowdin Enterprise: the name in https://&lt;organization&gt;.crowdin.com. Leave empty for crowdin.com."))
             }
             form.addLabeledComponent("${kind.displayName} API token:", tokens.getValue(kind)).addComponentToRightColumn(hint(kind.tokenHint))
         }

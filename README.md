@@ -122,6 +122,8 @@ Set the platform, project ID and token in **Settings → Tools → KMP Translati
 (`composeApp-commonMain-strings.xml`). On POEditor, which has one set of keys per project, use one project per folder
 when modules share key names.
 
+<img src="docs/screenshots/07-sync.png" alt="Translation Platform settings and the Sync with Crowdin dialog" width="900">
+
 ### Import, export and Run in this locale
 
 Export CSV (all locales), XLIFF 1.2 or Android `strings.xml` for translators, and import them back: plural forms and
