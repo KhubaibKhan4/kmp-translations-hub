@@ -72,21 +72,23 @@ class ResourceUsagesLineMarkerProvider : LineMarkerProvider {
         val name = tag.getAttributeValue("name") ?: return null
         val file = tag.containingFile.virtualFile ?: return null
         val root = ResourceFolders.rootOf(file) ?: return null
-        if (file.parent.name != "values" || ResourceFolders.format(root) != ResourceFormat.COMPOSE) return null
+        if (file.parent.name != "values") return null
         val key = ResourceKey(kind, name)
+        val format = ResourceFolders.format(root)
         return LineMarkerInfo(
-            element, element.textRange, AllIcons.Gutter.ImplementedMethod, { "Find uses of Res.${accessorKind(kind)}.$name" },
-            UsagesNavigation(key, root), GutterIconRenderer.Alignment.LEFT, { "Uses of $name" },
+            element, element.textRange, AllIcons.Gutter.ImplementedMethod, { "Find uses of ${accessor(format, key)}" },
+            UsagesNavigation(key, root, format), GutterIconRenderer.Alignment.LEFT, { "Uses of $name" },
         )
     }
 
-    private class UsagesNavigation(private val key: ResourceKey, private val root: VirtualFile) : GutterIconNavigationHandler<PsiElement> {
+    private class UsagesNavigation(private val key: ResourceKey, private val root: VirtualFile, private val format: ResourceFormat) :
+        GutterIconNavigationHandler<PsiElement> {
         override fun navigate(event: MouseEvent, element: PsiElement) {
             val project = element.project
-            val uses = ResourceUsages.find(project, key)
+            val uses = ResourceUsages.find(project, key, format)
             val point = RelativePoint(event)
             when (uses.size) {
-                0 -> JBPopupFactory.getInstance().createMessage("No Kotlin code uses Res.${accessorKind(key.kind)}.${key.name}").show(point)
+                0 -> JBPopupFactory.getInstance().createMessage("Nothing uses ${accessor(format, key)}").show(point)
                 1 -> open(project, uses.single())
                 else -> JBPopupFactory.getInstance().createListPopup(object : BaseListPopupStep<Pair<VirtualFile, Int>>("Uses of ${key.name}", uses) {
                     override fun getTextFor(value: Pair<VirtualFile, Int>): String {
@@ -106,6 +108,10 @@ class ResourceUsagesLineMarkerProvider : LineMarkerProvider {
         private fun open(project: Project, use: Pair<VirtualFile, Int>) = OpenFileDescriptor(project, use.first, use.second).navigate(true)
     }
 }
+
+/** How code refers to [key]: `Res.string.hello`, or `R.string.hello` in an Android `res` folder. */
+internal fun accessor(format: ResourceFormat, key: ResourceKey) =
+    "${if (format == ResourceFormat.ANDROID) "R" else "Res"}.${accessorKind(key.kind)}.${key.name}"
 
 internal fun accessorKind(kind: ResourceKind) = when (kind) {
     ResourceKind.STRING -> "string"

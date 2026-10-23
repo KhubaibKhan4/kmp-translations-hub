@@ -10,6 +10,7 @@ import com.intellij.psi.PsiElement
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.psi.search.GlobalSearchScopes
 import com.intellij.psi.util.PsiTreeUtil
+import io.github.translationshub.core.ResourceFormat
 import io.github.translationshub.core.ResourceKey
 import io.github.translationshub.core.ResourceKind
 import io.github.translationshub.core.TextValue
@@ -35,12 +36,18 @@ import org.jetbrains.kotlin.resolve.ImportPath
 /**
  * Turns `Text("Hello, $name")` into `Text(stringResource(Res.string.hello_name, name))`: the text goes into the
  * module's default `strings.xml` (`Hello, %1$s`), the literal is replaced, and the imports are added, as one Undo.
- * Works on the PSI only (no analysis), so it is the same in K1 and K2 mode.
+ * A module with no `composeResources` but an Android `res` folder gets `stringResource(R.string.hello_name, name)`
+ * instead. Works on the PSI only (no analysis), so it is the same in K1 and K2 mode.
  */
 object ExtractString {
 
     /** A Kotlin string literal that's worth extracting from Compose UI code, and where it would go. */
-    class Candidate(val literal: KtStringTemplateExpression, val root: VirtualFile, val text: String, val arguments: List<String>)
+    class Candidate(val literal: KtStringTemplateExpression, val root: VirtualFile, val text: String, val arguments: List<String>) {
+        val format get() = ResourceFolders.format(root)
+
+        /** "Extract to composeResources", or to the Android strings file. */
+        val actionText get() = if (format == ResourceFormat.ANDROID) "Extract to res/values/strings.xml" else "Extract to composeResources"
+    }
 
     fun candidate(element: PsiElement): Candidate? {
         val literal = PsiTreeUtil.getParentOfType(element, KtStringTemplateExpression::class.java, false) ?: return null
@@ -50,7 +57,7 @@ object ExtractString {
         if (!isInComposeUi(literal)) return null
         val file = literal.containingFile?.virtualFile ?: return null
         val root = rootFor(literal.project, file) ?: return null
-        val (text, arguments) = template(literal) ?: return null
+        val (text, arguments) = template(literal, android = ResourceFolders.format(root) == ResourceFormat.ANDROID) ?: return null
         if (text.count(Char::isLetter) < 2) return null
         return Candidate(literal, root, text, arguments)
     }
@@ -66,16 +73,22 @@ object ExtractString {
             // Nested in this command, so the XML and the Kotlin change are one Undo.
             controller.addKey(name, TextValue(candidate.text))
             val factory = KtPsiFactory(project)
+            val android = candidate.format == ResourceFormat.ANDROID
             val call = buildString {
-                append("stringResource(Res.string.").append(name)
+                append(if (android) "stringResource(R.string." else "stringResource(Res.string.").append(name)
                 candidate.arguments.forEach { append(", ").append(it) }
                 append(')')
             }
             candidate.literal.replace(factory.createExpression(call))
-            addImport(file, "org.jetbrains.compose.resources.stringResource")
-            resourcesPackage(project, file)?.let { pkg ->
-                addImport(file, "$pkg.Res")
-                addImport(file, "$pkg.$name")
+            if (android) {
+                addImport(file, "androidx.compose.ui.res.stringResource")
+                androidNamespace(project, candidate.root, file)?.takeIf { it != file.packageFqName.asString() }?.let { addImport(file, "$it.R") }
+            } else {
+                addImport(file, "org.jetbrains.compose.resources.stringResource")
+                resourcesPackage(project, file)?.let { pkg ->
+                    addImport(file, "$pkg.Res")
+                    addImport(file, "$pkg.$name")
+                }
             }
             PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(
                 PsiDocumentManager.getInstance(project).getDocument(file) ?: return@run,
@@ -127,13 +140,17 @@ object ExtractString {
 
     private val UI_TEXT_PARAMETERS = setOf("text", "label", "title", "contentDescription", "placeholder", "message", "subtitle", "description", "hint", "supportingText", "confirmText", "dismissText")
 
-    /** Template → resource text and arguments: `"Hi $name, ${n + 1} left"` → `Hi %1$s, %2$s left`, `[name, n + 1]`. */
-    private fun template(literal: KtStringTemplateExpression): Pair<String, List<String>>? {
+    /**
+     * Template → resource text and arguments: `"Hi $name, ${n + 1} left"` → `Hi %1$s, %2$s left`, `[name, n + 1]`.
+     * [android]: Android formats the whole string when it has arguments, so a literal `%` there becomes `%%`.
+     */
+    private fun template(literal: KtStringTemplateExpression, android: Boolean): Pair<String, List<String>>? {
         val text = StringBuilder()
         val arguments = mutableListOf<String>()
+        val formatted = android && literal.entries.any { it is KtSimpleNameStringTemplateEntry || it is KtBlockStringTemplateEntry }
         for (entry in literal.entries) when (entry) {
             // Compose only formats %1$s / %1$d, so a literal % stays as it is.
-            is KtLiteralStringTemplateEntry -> text.append(entry.text)
+            is KtLiteralStringTemplateEntry -> text.append(if (formatted) entry.text.replace("%", "%%") else entry.text)
             // Kept as written: \n, \t, \" and \' mean the same in strings.xml; \$ becomes a plain dollar.
             is KtEscapeStringTemplateEntry -> text.append(if (entry.text == "\\$") "$" else entry.text)
             is KtSimpleNameStringTemplateEntry, is KtBlockStringTemplateEntry -> {
@@ -146,10 +163,39 @@ object ExtractString {
         return text.toString() to arguments
     }
 
-    /** The module's `composeResources` folder: the nearest one whose module contains [file]. */
-    private fun rootFor(project: Project, file: VirtualFile): VirtualFile? = ResourceRoots.nearest(project, file).firstOrNull { root ->
-        val module = root.parent?.parent?.parent ?: return@firstOrNull false
-        VfsUtilCore.isAncestor(module, file, true)
+    /**
+     * Where [file]'s strings go: its module's `composeResources` folder, else its module's Android `res` folder. A KMP
+     * module keeps using `Res` from `androidMain` too; an Android-only module gets `R`.
+     */
+    private fun rootFor(project: Project, file: VirtualFile): VirtualFile? =
+        sequenceOf(ResourceFormat.COMPOSE, ResourceFormat.ANDROID).firstNotNullOfOrNull { format ->
+            ResourceRoots.nearest(project, file, format).firstOrNull { root ->
+                // composeResources and res both sit at module/src/<sourceSet>/<root>.
+                val module = root.parent?.parent?.parent ?: return@firstOrNull false
+                VfsUtilCore.isAncestor(module, file, true) && (format == ResourceFormat.COMPOSE || root.findFileByRelativePath("values") != null)
+            }
+        }
+
+    private val rImport = Regex("""^import\s+([\w.]+)\.R\s*$""", RegexOption.MULTILINE)
+    private val namespace = Regex("""\bnamespace\s*=?\s*["']([\w.]+)["']""")
+    private val manifestPackage = Regex("""<manifest\b[^>]*\bpackage\s*=\s*"([\w.]+)"""")
+
+    /**
+     * The package of the module's `R` class: from this file's import of it, the module's `namespace` in
+     * build.gradle(.kts), the manifest's `package`, or another Kotlin file's import; null if none says.
+     */
+    private fun androidNamespace(project: Project, root: VirtualFile, file: KtFile): String? {
+        rImport.find(file.text)?.let { return it.groupValues[1] }
+        val sourceSet = root.parent ?: return null
+        val module = sourceSet.parent?.parent ?: return null
+        val documents = FileDocumentManager.getInstance()
+        fun read(f: VirtualFile?) = f?.let { documents.getCachedDocument(it)?.text ?: runCatching { String(it.contentsToByteArray(), it.charset) }.getOrNull() }
+        for (build in listOf("build.gradle.kts", "build.gradle")) read(module.findChild(build))?.let { namespace.find(it) }?.let { return it.groupValues[1] }
+        read(sourceSet.findChild("AndroidManifest.xml"))?.let { manifestPackage.find(it) }?.let { return it.groupValues[1] }
+        for (other in FilenameIndex.getAllFilesByExt(project, "kt", GlobalSearchScopes.directoryScope(project, module, true))) {
+            read(other)?.let { rImport.find(it) }?.let { return it.groupValues[1] }
+        }
+        return null
     }
 
     /**

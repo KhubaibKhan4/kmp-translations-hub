@@ -11,6 +11,11 @@
 - Nothing to translate is skipped: `@string/…` references, arrays of references, `<resources translatable="false">`
   files and `donottranslate.xml`.
 - A machine translation that adds markup its source doesn't have (`<string name="…">`) is dropped instead of saved.
+- `R.string` in Android modules: the gutter icon on each key finds its uses in Kotlin, Java (`R.string.x`) and XML
+  (`@string/x` in layouts, menus, preferences and other strings), and the unused-key check covers `res` folders.
+- Alt+Enter in an Android module's Compose code extracts to `res/values/strings.xml` as `stringResource(R.string.…)`,
+  with the `R` import from the module's namespace; a literal `%` becomes `%%` when the string has arguments. KMP
+  modules with `composeResources` keep extracting to `Res`.
 
 ## 0.2.0
 

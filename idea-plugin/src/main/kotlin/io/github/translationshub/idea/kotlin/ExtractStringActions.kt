@@ -21,15 +21,15 @@ import org.jetbrains.kotlin.psi.KtVisitorVoid
 
 private const val FEATURE = "Extracting strings to composeResources"
 
-/** Alt+Enter on a string in Compose UI code: "Extract to composeResources". */
+/** Alt+Enter on a string in Compose UI code: "Extract to composeResources", or to an Android module's strings.xml. */
 class ExtractStringIntention : PsiElementBaseIntentionAction() {
 
-    override fun getFamilyName() = "Extract to composeResources"
-    override fun getText() = familyName
+    override fun getFamilyName() = "Extract to string resources"
     override fun startInWriteAction() = false
 
     override fun isAvailable(project: Project, editor: Editor?, element: PsiElement): Boolean {
         val candidate = ExtractString.candidate(element) ?: return false
+        text = candidate.actionText
         // Where the inspection already offers the same fix, Alt+Enter would list it twice.
         return !(ExtractString.isComposeCallArgument(candidate.literal) && inspectionEnabled(project, element))
     }
@@ -45,7 +45,7 @@ class ExtractStringIntention : PsiElementBaseIntentionAction() {
             val suggested = ExtractString.suggestName(candidate)
             val name = if (ApplicationManager.getApplication().isUnitTestMode) suggested
             else Messages.showInputDialog(
-                project, "Key for \"${candidate.text}\":", "Extract to composeResources", null, suggested,
+                project, "Key for \"${candidate.text}\":", candidate.actionText, null, suggested,
                 KeyNameValidator { !ExtractString.isTaken(candidate, it) },
             ) ?: return@runOrUpsell
             ExtractString.extract(project, candidate, name)
@@ -66,13 +66,14 @@ class HardcodedComposeTextInspection : LocalInspectionTool() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor = object : KtVisitorVoid() {
         override fun visitStringTemplateExpression(expression: KtStringTemplateExpression) {
             if (!ExtractString.isComposeCallArgument(expression)) return
-            if (ExtractString.candidate(expression) == null) return
-            holder.registerProblem(expression, "Hardcoded text in Compose UI", ProblemHighlightType.WEAK_WARNING, ExtractFix())
+            val candidate = ExtractString.candidate(expression) ?: return
+            holder.registerProblem(expression, "Hardcoded text in Compose UI", ProblemHighlightType.WEAK_WARNING, ExtractFix(candidate.actionText))
         }
     }
 
-    private class ExtractFix : LocalQuickFix {
-        override fun getFamilyName() = "Extract to composeResources"
+    private class ExtractFix(private val label: String) : LocalQuickFix {
+        override fun getFamilyName() = "Extract to string resources"
+        override fun getName() = label
         override fun startInWriteAction() = false
         override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
             val candidate = ExtractString.candidate(descriptor.psiElement) ?: return
