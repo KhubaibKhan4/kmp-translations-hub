@@ -4,7 +4,6 @@
     <vendor>Khubaib Khan</vendor>
     <description><![CDATA[
     <p><b>Every translation of your Compose Multiplatform app in one table, and only what changed gets translated.</b></p>
-    <p>Free:</p>
     <ul>
       <li>A <b>Translations</b> tab on every <code>composeResources/values…</code> XML file: all keys of the module
           against all locales, with search and filters for missing, problem and outdated translations.</li>
@@ -13,9 +12,6 @@
       <li>Checks for missing translations, placeholders that don't match the default text, array sizes and keys left
           behind, in the tab and as warnings in the XML editor.</li>
       <li>⌘/Ctrl+click <code>Res.string.hello</code> to jump to its XML; a gutter icon on each key finds its uses.</li>
-    </ul>
-    <p>Pro (free trial through JetBrains Marketplace):</p>
-    <ul>
       <li><b>Translate Changes</b>: only missing and outdated strings, every locale at once, placeholders protected.
           Apple on-device translation and MyMemory need no key; or use your own DeepL, Google Cloud, Claude or OpenAI key.</li>
       <li>Plural forms each language needs (Arabic 6, Polish 4, Japanese 1), and checks for escapes, untranslated
@@ -27,6 +23,8 @@
       <li>Import and export CSV, XLIFF 1.2 and Android <code>strings.xml</code> for translators.</li>
       <li><b>Run in this locale</b> on an Android device or iOS simulator, with KMP Device Hub.</li>
     </ul>
+    <p>Every feature is free. If it saves you time, you can support its development on
+       <a href="https://ko-fi.com/Y8Y2YABZ7">Ko-fi</a> or <a href="https://www.buymeacoffee.com/khubaibkhan">Buy Me a Coffee</a>.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

@@ -2,10 +2,10 @@
 
 ## Your steps (accounts and decisions only you can make)
 
-- [x] **GitHub repo** `KhubaibKhan4/kmp-translations-hub`, private, pushed 2026-10-21. Make it public only if you want to.
+- [x] **GitHub repo** `KhubaibKhan4/kmp-translations-hub`, public.
 - [ ] **Fix GitHub billing** so CI runs: the first run was refused ("recent account payments have failed or your
       spending limit needs to be increased"), same as KMP Device Hub.
-- [ ] **Paid plan**: apply in JetBrains Marketplace → vendor profile → Sales, as Freemium. They assign the product code.
+- [ ] **Paid plan** (later; free with donations for now): apply in JetBrains Marketplace → vendor profile → Sales, as Freemium. They assign the product code.
 - [ ] **Price and trial length.**
 - [ ] **Release date**: `translationshub.releaseDate` is a placeholder (20261201). Set it to the launch date (YYYYMMDD).
 - [ ] Secrets for CI with `gh secret set` (it prompts): `PUBLISH_TOKEN`, `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD`.

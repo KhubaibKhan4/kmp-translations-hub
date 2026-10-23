@@ -15,6 +15,8 @@ For Kotlin Multiplatform and Compose Multiplatform developers who keep their str
 [![Rating](https://img.shields.io/jetbrains/plugin/r/rating/35376?color=3DDC84)](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews)
 ![Android Studio & IntelliJ IDEA 2025.1+](https://img.shields.io/badge/Android%20Studio%20%26%20IntelliJ-2025.1%2B-7F52FF)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-composeResources-1E88E5)
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/Y8Y2YABZ7)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?logo=buymeacoffee&logoColor=black)](https://www.buymeacoffee.com/khubaibkhan)
 
 <a href="https://youtu.be/OsYgv6vD9V4"><img src="https://img.youtube.com/vi/OsYgv6vD9V4/maxresdefault.jpg" alt="Watch the 90-second demo on YouTube" width="640"></a>
 
@@ -131,20 +133,14 @@ array items are their own entries (`cart_items#few`, `days[2]`), so any tool can
 [KMP Device Hub](https://plugins.jetbrains.com/plugin/35272-kmp-device-hub) installed, **Run App in Selected Locale**
 relaunches your app in that column's language on an Android device or iOS simulator.
 
-## Free and Pro
+## Free, supported by donations
 
-**Early access:** every Pro feature is free in the current release, while the paid plan is set up on the
-Marketplace. Ratings and reviews on the [Marketplace page](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews) help a lot.
+Every feature is free: the Translations tab, the checks, Translate Changes with every service, string extraction,
+sync with Crowdin, Lokalise and POEditor, import and export, and Run in this locale with KMP Device Hub.
 
-| Free | Pro (free trial through JetBrains Marketplace) |
-|---|---|
-| The Translations tab: strings, plurals, arrays, every locale | Translate Changes with Apple, MyMemory, DeepL, Google Cloud, Claude or OpenAI |
-| Add, rename and delete keys; add locales | Plural forms per language, in the side panel and the checks |
-| Missing translations, placeholders, array sizes, keys left behind | Unknown escapes, untranslated text, length, unused keys |
-| `Res.string` navigation and usages | Extract hardcoded strings |
-| | Sync with Crowdin, Lokalise and POEditor |
-| | Import and export: CSV, XLIFF, `strings.xml` |
-| | Run in this locale, with KMP Device Hub |
+If it saves you time, you can support its development on [Ko-fi](https://ko-fi.com/Y8Y2YABZ7) or [Buy Me a Coffee](https://www.buymeacoffee.com/khubaibkhan). A rating
+or review on the [Marketplace page](https://plugins.jetbrains.com/plugin/35376-kmp-translations-hub/reviews) helps a
+lot too.
 
 ## How translating only what changed works
 
